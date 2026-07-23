@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/scheme_controller.dart';
 import '../../controllers/shop_controller.dart';
@@ -46,10 +45,7 @@ abstract final class AppSheets {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.notoSerif(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
               ),
             ),
             IconButton(onPressed: Get.back, icon: const Icon(Icons.close)),
@@ -137,7 +133,7 @@ abstract final class AppSheets {
                   const SizedBox(height: 18),
                   Text(
                     product.category.toUpperCase(),
-                    style: GoogleFonts.notoSerif(
+                    style: TextStyle(
                       color: AppColors.gold,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
@@ -149,7 +145,7 @@ abstract final class AppSheets {
                   const SizedBox(height: 8),
                   Text(
                     '₹${product.price}',
-                    style: GoogleFonts.notoSerif(
+                    style: TextStyle(
                       color: AppColors.goldDark,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -158,10 +154,7 @@ abstract final class AppSheets {
                   const SizedBox(height: 14),
                   Text(
                     product.description,
-                    style: GoogleFonts.notoSerif(
-                      color: AppColors.muted,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(color: AppColors.muted, height: 1.5),
                   ),
                   const SizedBox(height: 18),
                   const Wrap(
@@ -248,9 +241,7 @@ abstract final class AppSheets {
                             children: [
                               Text(
                                 product.name,
-                                style: GoogleFonts.notoSerif(
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               Text('₹${product.price}'),
                               Row(
@@ -264,7 +255,7 @@ abstract final class AppSheets {
                                   ),
                                   Text(
                                     '${entry.value}',
-                                    style: GoogleFonts.notoSerif(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
@@ -297,13 +288,11 @@ abstract final class AppSheets {
                       children: [
                         Text(
                           'Subtotal',
-                          style: GoogleFonts.notoSerif(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         Text(
                           '₹${shop.subtotal}',
-                          style: GoogleFonts.notoSerif(
+                          style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
                           ),
@@ -385,7 +374,7 @@ abstract final class AppSheets {
               children: [
                 Text(
                   'DELIVER TO',
-                  style: GoogleFonts.notoSerif(
+                  style: TextStyle(
                     color: AppColors.goldDark,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -426,7 +415,7 @@ abstract final class AppSheets {
                     const Text('Order total'),
                     Text(
                       '₹${shop.subtotal}',
-                      style: GoogleFonts.notoSerif(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
@@ -496,29 +485,111 @@ abstract final class AppSheets {
             _header('Saved Addresses'),
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.only(top: 16),
                 itemCount: shop.addresses.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, index) {
                   final address = shop.addresses[index];
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(
-                        address.label == 'Home'
-                            ? Icons.home_outlined
-                            : Icons.work_outline,
-                      ),
-                      title: Text(address.label),
-                      subtitle: Text(address.lines),
-                      trailing: address.isDefault
-                          ? const Chip(label: Text('Default'))
-                          : TextButton(
-                              onPressed: () =>
-                                  shop.setDefaultAddress(address.id),
-                              child: const Text('Set default'),
-                            ),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.line),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Row(
+                      children: [
+                        // const Icon(Icons.home_outlined, color: AppColors.goldDark),
+                        // const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    address.label,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  address.isDefault
+                                      ? Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.goldSoft
+                                                .withOpacity(.3),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "DEFAULT",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppColors.goldDark,
+                                            ),
+                                          ),
+                                        )
+                                      : SizedBox.shrink(),
+                                ],
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                address.user,
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                address.lines,
+                                style: TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              address.isDefault == false
+                                  ? SizedBox(height: 6)
+                                  : SizedBox.shrink(),
+                              address.isDefault == false
+                                  ? Text(
+                                      "Set default",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.goldDark,
+                                      ),
+                                    )
+                                  : SizedBox.shrink(),
+                            ],
+                          ),
+                        ),
+                        // const Chip(label: Text('Default')),
+                      ],
                     ),
                   );
+
+                  // Card(
+                  //   child: ListTile(
+                  //     leading: Icon(
+                  //       address.label == 'Home'
+                  //           ? Icons.home_outlined
+                  //           : Icons.work_outline,
+                  //     ),
+                  //     title: Text(address.label),
+                  //     subtitle: Text(address.lines),
+                  //     trailing: address.isDefault
+                  //         ? const Chip(label: Text('Default'))
+                  //         : TextButton(
+                  //             onPressed: () =>
+                  //                 shop.setDefaultAddress(address.id),
+                  //             child: const Text('Set default'),
+                  //           ),
+                  //   ),
+                  // );
                 },
               ),
             ),
@@ -547,14 +618,11 @@ abstract final class AppSheets {
                 const SizedBox(height: 12),
                 Text(
                   '₹${scheme.monthlyAmount.value}',
-                  style: GoogleFonts.notoSerif(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
                 ),
                 Text(
                   'Secure payment for your Wavoo Gold Scheme',
-                  style: GoogleFonts.notoSerif(color: AppColors.muted),
+                  style: TextStyle(color: AppColors.muted),
                 ),
                 const SizedBox(height: 20),
                 PrimaryButton(

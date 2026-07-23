@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_colors.dart';
 
@@ -23,25 +22,25 @@ abstract final class AppTheme {
       ),
       dividerColor: AppColors.line,
       textTheme: TextTheme(
-        headlineLarge: GoogleFonts.notoSerif(
+        headlineLarge: TextStyle(
           // fontFamily: 'serif',
           fontSize: 30,
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
-        headlineSmall: GoogleFonts.notoSerif(
+        headlineSmall: TextStyle(
           // fontFamily: 'serif',
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
-        titleLarge: GoogleFonts.notoSerif(
+        titleLarge: TextStyle(
           // fontFamily: 'serif',
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
-        bodyMedium: GoogleFonts.notoSerif(color: AppColors.ink),
-        bodySmall: GoogleFonts.notoSerif(color: AppColors.muted),
+        bodyMedium: TextStyle(color: AppColors.ink),
+        bodySmall: TextStyle(color: AppColors.muted),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -53,7 +52,7 @@ abstract final class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.ink,
-        contentTextStyle: GoogleFonts.notoSerif(color: Colors.white),
+        contentTextStyle: TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
       ),
     );

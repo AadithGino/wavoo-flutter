@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/navigation_controller.dart';
 import '../../core/constants/app_colors.dart';
@@ -107,7 +106,7 @@ class _OfferTile extends StatelessWidget {
         children: [
           Text(
             tag,
-            style: GoogleFonts.notoSerif(
+            style: TextStyle(
               color: AppColors.goldSoft,
               fontSize: 9,
               fontWeight: FontWeight.w900,
@@ -117,7 +116,7 @@ class _OfferTile extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             title,
-            style: GoogleFonts.notoSerif(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.w600,
@@ -128,7 +127,7 @@ class _OfferTile extends StatelessWidget {
             width: 270,
             child: Text(
               text,
-              style: GoogleFonts.notoSerif(color: Colors.white70, height: 1.35),
+              style: TextStyle(color: Colors.white70, height: 1.35),
             ),
           ),
           const SizedBox(height: 14),
@@ -140,10 +139,7 @@ class _OfferTile extends StatelessWidget {
             ),
             label: Text(
               button,
-              style: GoogleFonts.notoSerif(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
             ),
             icon: const Icon(Icons.arrow_forward, size: 17),
           ),

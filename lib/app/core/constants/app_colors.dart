@@ -11,4 +11,3 @@ abstract final class AppColors {
   static const line = Color(0xFFECE3D7);
   static const ivory = Color(0xFFFFFDF9);
 }
-

@@ -17,15 +17,17 @@ class ShopController extends GetxController {
   final cart = <int, int>{1: 1, 2: 1}.obs;
   final addresses = <Address>[
     const Address(
+      user: "Aadith Gino · +91 9876543210",
       id: 'home',
       label: 'Home',
-      lines: 'Aadith G, Palm Grove, Kannur, Kerala 670001',
+      lines: '42, Lattice Bridge Road, Adyar \nChennai, Tamil Nadu — 600020',
       isDefault: true,
     ),
     const Address(
+      user: "Aadith Gino · +91 9876543210",
       id: 'work',
       label: 'Work',
-      lines: 'Aadith G, Harbour Road, Kozhikode, Kerala 673001',
+      lines: 'Wavoo Towers, 3rd Floor, T. Nagar\nChennai, Tamil Nadu — 600017',
     ),
   ].obs;
   final orders = <JewelleryOrder>[].obs;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
@@ -22,7 +21,7 @@ class CatalogView extends StatelessWidget {
               subtitle: 'Fine jewellery for every moment',
               trailing: Text(
                 '${shop.filteredProducts.length} pieces',
-                style: GoogleFonts.notoSerif(
+                style: TextStyle(
                   color: Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -64,7 +63,7 @@ class CatalogView extends StatelessWidget {
                       ),
                       child: Text(
                         category,
-                        style: GoogleFonts.notoSerif(
+                        style: TextStyle(
                           color: selected ? Colors.white : AppColors.ink,
                           fontWeight: selected
                               ? FontWeight.bold

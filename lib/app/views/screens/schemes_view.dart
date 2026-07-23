@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/scheme_controller.dart';
 import '../../core/constants/app_colors.dart';
@@ -47,7 +46,7 @@ class SchemesView extends StatelessWidget {
                     children: [
                       Text(
                         'WAVOO GOLD SAVINGS',
-                        style: GoogleFonts.notoSerif(
+                        style: TextStyle(
                           color: AppColors.goldSoft,
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -58,13 +57,10 @@ class SchemesView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  Text(
-                    'Your savings',
-                    style: GoogleFonts.notoSerif(color: Colors.white70),
-                  ),
+                  Text('Your savings', style: TextStyle(color: Colors.white70)),
                   Text(
                     '₹${scheme.savedAmount}',
-                    style: GoogleFonts.notoSerif(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 35,
                       fontWeight: FontWeight.w600,
@@ -84,14 +80,11 @@ class SchemesView extends StatelessWidget {
                     children: [
                       Text(
                         '${scheme.paidInstallments.value} of ${scheme.totalInstallments} instalments',
-                        style: GoogleFonts.notoSerif(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                       Text(
                         '${(scheme.progress * 100).round()}%',
-                        style: GoogleFonts.notoSerif(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                         ),
@@ -118,10 +111,7 @@ class SchemesView extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Text(
               'Why save with Wavoo?',
-              style: GoogleFonts.notoSerif(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
             ),
           ),
           const _Benefit(
@@ -143,10 +133,7 @@ class SchemesView extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, 22, 16, 8),
             child: Text(
               'Monthly plan',
-              style: GoogleFonts.notoSerif(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
             ),
           ),
           Padding(
@@ -184,10 +171,7 @@ class _Benefit extends StatelessWidget {
       foregroundColor: AppColors.goldDark,
       child: Icon(icon),
     ),
-    title: Text(
-      title,
-      style: GoogleFonts.notoSerif(fontWeight: FontWeight.w700),
-    ),
+    title: Text(title, style: TextStyle(fontWeight: FontWeight.w700)),
     subtitle: Text(text),
   );
 }

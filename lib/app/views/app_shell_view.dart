@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/navigation_controller.dart';
 import '../controllers/shop_controller.dart';
@@ -53,7 +53,10 @@ class AppShellView extends GetView<NavigationController> {
           IconButton(
             tooltip: 'Search',
             onPressed: AppSheets.showSearch,
-            icon: const Icon(Icons.search),
+            icon: SvgPicture.asset(
+              "assets/svg/search.svg",
+              color: AppColors.goldDark,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 7),
@@ -62,18 +65,17 @@ class AppShellView extends GetView<NavigationController> {
                 isLabelVisible: shop.cartCount > 0,
                 label: Text('${shop.cartCount}'),
                 backgroundColor: AppColors.gold,
-                child: IconButton(
-                  tooltip: 'Shopping bag',
-                  onPressed: AppSheets.showCart,
-                  icon: const Icon(Icons.shopping_bag_outlined),
+                child: SvgPicture.asset(
+                  "assets/svg/shopping-bag.svg",
+                  color: AppColors.goldDark,
                 ),
               ),
             ),
           ),
         ],
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1),
+          child: Divider(height: 1, color: Colors.grey.withOpacity(.4)),
         ),
       ),
       body: Obx(
@@ -88,17 +90,23 @@ class AppShellView extends GetView<NavigationController> {
           selectedIndex: controller.currentIndex.value,
           onDestinationSelected: controller.changePage,
           backgroundColor: AppColors.ivory,
-          indicatorColor: AppColors.cream2,
+          indicatorColor: Colors.white,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
+              icon: SvgPicture.asset("assets/svg/home.svg"),
+              selectedIcon: SvgPicture.asset(
+                "assets/svg/home-selected.svg",
+                color: AppColors.gold,
+              ),
               label: 'Home',
             ),
             NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view),
+              icon: SvgPicture.asset("assets/svg/category.svg"),
+              selectedIcon: SvgPicture.asset(
+                "assets/svg/category.svg",
+                color: AppColors.gold,
+              ),
               label: 'Categories',
             ),
             NavigationDestination(
@@ -107,13 +115,19 @@ class AppShellView extends GetView<NavigationController> {
               label: 'Schemes',
             ),
             NavigationDestination(
-              icon: Icon(Icons.local_offer_outlined),
-              selectedIcon: Icon(Icons.local_offer),
+              icon: SvgPicture.asset("assets/svg/offer.svg"),
+              selectedIcon: SvgPicture.asset(
+                "assets/svg/offer.svg",
+                color: AppColors.gold,
+              ),
               label: 'Offers',
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
+              icon: SvgPicture.asset("assets/svg/profile.svg"),
+              selectedIcon: SvgPicture.asset(
+                "assets/svg/profile.svg",
+                color: AppColors.gold,
+              ),
               label: 'Profile',
             ),
           ],
@@ -218,18 +232,12 @@ class _AppDrawer extends StatelessWidget {
                 children: [
                   Text(
                     'Private jewellery styling',
-                    style: GoogleFonts.notoSerif(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 5),
                   Text(
                     'Book a one-to-one consultation with our experts.',
-                    style: GoogleFonts.notoSerif(
-                      color: AppColors.muted,
-                      fontSize: 11,
-                    ),
+                    style: TextStyle(color: AppColors.muted, fontSize: 11),
                   ),
                 ],
               ),
@@ -269,16 +277,13 @@ class _DrawerLink extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
     leading: Icon(icon, color: AppColors.goldDark),
-    title: Text(
-      label,
-      style: GoogleFonts.notoSerif(fontWeight: FontWeight.w600),
-    ),
+    title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
     trailing: badge > 0
         ? CircleAvatar(
             radius: 10,
             backgroundColor: AppColors.gold,
             foregroundColor: Colors.white,
-            child: Text('$badge', style: GoogleFonts.notoSerif(fontSize: 9)),
+            child: Text('$badge', style: TextStyle(fontSize: 9)),
           )
         : const Icon(Icons.chevron_right, size: 19),
     onTap: onTap,

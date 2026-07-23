@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
@@ -35,23 +35,17 @@ class ProfileView extends StatelessWidget {
                 foregroundColor: Colors.white,
                 child: Text(
                   'AG',
-                  style: GoogleFonts.notoSerif(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
                 ),
               ),
               SizedBox(height: 10),
               Text(
                 'Welcome, Aadith',
-                style: GoogleFonts.notoSerif(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w600),
               ),
               Text(
                 'Gold Member',
-                style: GoogleFonts.notoSerif(
+                style: TextStyle(
                   color: AppColors.goldDark,
                   fontWeight: FontWeight.w700,
                 ),
@@ -66,12 +60,15 @@ class ProfileView extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Saved addresses',
-                  style: GoogleFonts.notoSerif(fontWeight: FontWeight.w800),
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
                 ),
               ),
               TextButton(
                 onPressed: AppSheets.showAddresses,
-                child: const Text('Manage'),
+                child: Text(
+                  'Manage',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                ),
               ),
             ],
           ),
@@ -87,58 +84,100 @@ class ProfileView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.home_outlined, color: AppColors.goldDark),
-                const SizedBox(width: 12),
+                // const Icon(Icons.home_outlined, color: AppColors.goldDark),
+                // const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Text(
+                            address.label,
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          SizedBox(width: 10),
+                          address.isDefault
+                              ? Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.goldSoft.withOpacity(.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    "DEFAULT",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.goldDark,
+                                    ),
+                                  ),
+                                )
+                              : SizedBox.shrink(),
+                        ],
+                      ),
+                      SizedBox(height: 4),
                       Text(
-                        address.label,
-                        style: GoogleFonts.notoSerif(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        address.user,
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         address.lines,
-                        style: GoogleFonts.notoSerif(
-                          color: AppColors.muted,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: AppColors.muted, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
-                const Chip(label: Text('Default')),
+                // const Chip(label: Text('Default')),
               ],
             ),
           );
         }),
         const SizedBox(height: 18),
-        _ProfileItem(
-          icon: Icons.shopping_bag_outlined,
-          label: 'My Orders',
-          onTap: AppSheets.showOrders,
-        ),
-        _ProfileItem(
-          icon: Icons.favorite_border,
-          label: 'Saved Jewellery',
-          onTap: AppSheets.showWishlist,
-        ),
-        _ProfileItem(
-          icon: Icons.savings_outlined,
-          label: 'My Gold Scheme',
-          onTap: AppSheets.showSchemePayment,
-        ),
-        _ProfileItem(
-          icon: Icons.calendar_month_outlined,
-          label: 'Appointments',
-          onTap: () => _message('No upcoming appointments.'),
-        ),
-        _ProfileItem(
-          icon: Icons.help_outline,
-          label: 'Help & Support',
-          onTap: () => _message('Our support team will be happy to help.'),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          // padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.line),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Column(
+            children: [
+              _ProfileItem(
+                icon: Icons.shopping_bag_outlined,
+                label: 'My Orders',
+                onTap: AppSheets.showOrders,
+              ),
+              Divider(color: AppColors.line),
+              _ProfileItem(
+                icon: Icons.favorite_border,
+                label: 'Saved Jewellery',
+                onTap: AppSheets.showWishlist,
+              ),
+              Divider(color: AppColors.line),
+              _ProfileItem(
+                icon: Icons.savings_outlined,
+                label: 'My Gold Scheme',
+                onTap: AppSheets.showSchemePayment,
+              ),
+              Divider(color: AppColors.line),
+              _ProfileItem(
+                icon: Icons.calendar_month_outlined,
+                label: 'Appointments',
+                onTap: () => _message('No upcoming appointments.'),
+              ),
+              Divider(color: AppColors.line),
+              _ProfileItem(
+                icon: Icons.help_outline,
+                label: 'Help & Support',
+                onTap: () =>
+                    _message('Our support team will be happy to help.'),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -166,13 +205,10 @@ class _ProfileItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
     leading: Icon(icon, color: AppColors.goldDark),
-    title: Text(
-      label,
-      style: GoogleFonts.notoSerif(fontWeight: FontWeight.w600),
-    ),
-    trailing: const Icon(Icons.chevron_right),
+    title: Text(label, style: TextStyle(fontWeight: FontWeight.w300)),
+    trailing: SvgPicture.asset("assets/svg/chevron-right-svgrepo-com.svg"),
     onTap: onTap,
   );
 }

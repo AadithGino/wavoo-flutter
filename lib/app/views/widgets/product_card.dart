@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
@@ -52,7 +51,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           child: Text(
                             product.tag.toUpperCase(),
-                            style: GoogleFonts.notoSerif(
+                            style: TextStyle(
                               color: AppColors.ivory,
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
@@ -95,7 +94,7 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.notoSerif(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -105,7 +104,7 @@ class ProductCard extends StatelessWidget {
                       children: [
                         Text(
                           '₹${product.price}',
-                          style: GoogleFonts.notoSerif(
+                          style: TextStyle(
                             color: AppColors.goldDark,
                             fontWeight: FontWeight.w800,
                           ),
@@ -113,7 +112,7 @@ class ProductCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           '₹${product.oldPrice}',
-                          style: GoogleFonts.notoSerif(
+                          style: TextStyle(
                             color: AppColors.muted,
                             fontSize: 10,
                             decoration: TextDecoration.lineThrough,

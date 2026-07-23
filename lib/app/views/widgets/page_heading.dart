@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 
@@ -30,10 +29,7 @@ class PageHeading extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: GoogleFonts.notoSerif(
-                    color: AppColors.muted,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
               ],
             ),

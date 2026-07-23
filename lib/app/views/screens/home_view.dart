@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/navigation_controller.dart';
 import '../../controllers/scheme_controller.dart';
@@ -94,7 +93,7 @@ class _HomeViewState extends State<HomeView> {
                             children: [
                               Text(
                                 slide.$2,
-                                style: GoogleFonts.notoSerif(
+                                style: TextStyle(
                                   color: AppColors.goldDark,
                                   fontSize: 9,
                                   fontWeight: FontWeight.w900,
@@ -104,7 +103,7 @@ class _HomeViewState extends State<HomeView> {
                               const SizedBox(height: 5),
                               Text(
                                 slide.$3,
-                                style: GoogleFonts.notoSerif(
+                                style: TextStyle(
                                   fontSize: 24,
                                   height: 1.03,
                                   fontWeight: FontWeight.w600,
@@ -113,7 +112,7 @@ class _HomeViewState extends State<HomeView> {
                               const SizedBox(height: 6),
                               Text(
                                 slide.$4,
-                                style: GoogleFonts.notoSerif(
+                                style: TextStyle(
                                   fontSize: 10,
                                   color: AppColors.muted,
                                 ),
@@ -132,7 +131,7 @@ class _HomeViewState extends State<HomeView> {
                                   ),
                                   child: Text(
                                     'SHOP NOW',
-                                    style: GoogleFonts.notoSerif(
+                                    style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -196,7 +195,7 @@ class _HomeViewState extends State<HomeView> {
                     children: [
                       Text(
                         'MY GOLD SCHEME',
-                        style: GoogleFonts.notoSerif(
+                        style: TextStyle(
                           color: AppColors.goldDark,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
@@ -205,9 +204,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       Text(
                         '₹${scheme.savedAmount} saved',
-                        style: GoogleFonts.notoSerif(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 5),
                       LinearProgressIndicator(
@@ -251,7 +248,7 @@ class _HomeViewState extends State<HomeView> {
                       children: [
                         Text(
                           'GOLD SCHEME',
-                          style: GoogleFonts.notoSerif(
+                          style: TextStyle(
                             color: AppColors.gold,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -261,7 +258,7 @@ class _HomeViewState extends State<HomeView> {
                         SizedBox(height: 4),
                         Text(
                           'Save More,\nShine More',
-                          style: GoogleFonts.notoSerif(
+                          style: TextStyle(
                             fontSize: 22,
                             height: 1.05,
                             fontWeight: FontWeight.w600,
@@ -332,7 +329,7 @@ class _HomeViewState extends State<HomeView> {
                             Text(
                               category,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.notoSerif(fontSize: 9),
+                              style: TextStyle(fontSize: 9),
                             ),
                           ],
                         ),
@@ -397,7 +394,7 @@ class _HomeViewState extends State<HomeView> {
                 children: [
                   Text(
                     'EXCLUSIVE FOR YOU',
-                    style: GoogleFonts.notoSerif(
+                    style: TextStyle(
                       color: AppColors.goldSoft,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -405,7 +402,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   Text(
                     'Special Offers',
-                    style: GoogleFonts.notoSerif(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 23,
                       fontWeight: FontWeight.w600,
@@ -413,10 +410,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   Text(
                     'Up to 20% off on selected making charges',
-                    style: GoogleFonts.notoSerif(
-                      color: Colors.white70,
-                      fontSize: 10,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 10),
                   ),
                 ],
               ),
