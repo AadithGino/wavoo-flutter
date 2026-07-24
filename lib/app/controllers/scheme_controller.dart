@@ -23,6 +23,8 @@ class SchemeController extends GetxController {
   final totalInstallments = 11;
   final hasJoined = true.obs;
   final isRedeemed = false.obs;
+  final redemptionMethod = ''.obs;
+  final redemptionReference = ''.obs;
   final selectedPlanMonths = 11.obs;
 
   final planName = 'Wavoo Gold Savings Plan';
@@ -135,10 +137,12 @@ class SchemeController extends GetxController {
     _notify('Monthly instalment paid successfully');
   }
 
-  void redeem() {
+  void redeem([String method = 'Showroom redemption']) {
+    redemptionMethod.value = method;
+    redemptionReference.value =
+        'WAV-RD-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
     isRedeemed.value = true;
-    Get.back<void>();
-    _notify('Redemption request submitted');
+    _notify('Redemption request confirmed');
   }
 
   void _notify(String message) {

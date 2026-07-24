@@ -167,7 +167,9 @@ class _AppDrawer extends StatelessWidget {
           .clamp(0.0, 340.0)
           .toDouble(),
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 27),
@@ -232,14 +234,18 @@ class _AppDrawer extends StatelessWidget {
                     _DrawerLink(
                       svgAsset: 'assets/svg/location.svg',
                       label: 'Find a Store',
-                      onTap: () =>
-                          _notice(context, 'Nearest Wavoo showroom: 2.4 km'),
+                      onTap: () => _notice(
+                        context,
+                        'Nearest Wavoo showroom: 2.4 km',
+                      ),
                     ),
                     _DrawerLink(
                       svgAsset: 'assets/svg/phone.svg',
                       label: 'Contact Wavoo',
-                      onTap: () =>
-                          _notice(context, 'Wavoo support: +91 98765 43210'),
+                      onTap: () => _notice(
+                        context,
+                        'Wavoo support: +91 98765 43210',
+                      ),
                     ),
                   ],
                 ),
@@ -336,7 +342,9 @@ class _DrawerLink extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 13),
-              Expanded(child: Text(label, style: AppTypography.sans(size: 12))),
+              Expanded(
+                child: Text(label, style: AppTypography.sans(size: 12)),
+              ),
               if (badge > 0)
                 Container(
                   constraints: const BoxConstraints(minWidth: 20),

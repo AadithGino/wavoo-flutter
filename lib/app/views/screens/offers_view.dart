@@ -19,7 +19,7 @@ class OffersView extends StatelessWidget {
           subtitle: 'Curated privileges for you',
         ),
         _OfferTile(
-          height: 156,
+          height: 166,
           image: 'assets/images/design_08.webp',
           tag: '✦ FESTIVE SEASON',
           title: 'Festive Gold Edit',
@@ -29,7 +29,7 @@ class OffersView extends StatelessWidget {
           onTap: () => Get.find<NavigationController>().changePage(1),
         ),
         _OfferTile(
-          height: 132,
+          height: 168,
           tag: '✦ BY APPOINTMENT',
           title: 'Bridal Privilege',
           text:
@@ -41,7 +41,7 @@ class OffersView extends StatelessWidget {
           dark: false,
         ),
         _OfferTile(
-          height: 132,
+          height: 168,
           tag: '✦ MEMBERS ONLY',
           title: 'Golden Rewards',
           text: 'Earn double points every time you shop with Wavoo Jewellers.',
@@ -149,8 +149,9 @@ class _OfferTile extends StatelessWidget {
           TextButton.icon(
             onPressed: onTap,
             style: TextButton.styleFrom(
-              foregroundColor:
-                  dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
+              foregroundColor: dark
+                  ? const Color(0xFFFFE5A8)
+                  : AppColors.goldDark,
               padding: EdgeInsets.zero,
             ),
             label: Text(

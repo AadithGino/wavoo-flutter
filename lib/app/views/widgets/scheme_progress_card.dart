@@ -18,19 +18,27 @@ class SchemeProgressCard extends StatelessWidget {
     final scheme = Get.find<SchemeController>();
     return Obx(
       () => InkWell(
-        onTap: onOpenPlan,
+        onTap: scheme.matured
+            ? AppSheets.showRedemption
+            : onOpenPlan,
         borderRadius: BorderRadius.circular(13),
         child: Container(
           margin: const EdgeInsets.only(top: 14, bottom: 4),
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 12),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.ivory, AppColors.pageCard],
+              colors: scheme.matured && !scheme.isRedeemed.value
+                  ? const [Color(0xFFFFF9EF), Color(0xFFF7EAD0)]
+                  : const [AppColors.ivory, AppColors.pageCard],
             ),
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: AppColors.goldBorder),
+            border: Border.all(
+              color: scheme.matured
+                  ? const Color(0xFFDFC9A8)
+                  : AppColors.goldBorder,
+            ),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x128B5A14),
@@ -90,9 +98,11 @@ class SchemeProgressCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                scheme.matured
-                                    ? 'PLAN MATURED'
-                                    : 'GOLD PLAN ACTIVE',
+                                scheme.isRedeemed.value
+                                    ? 'REDEEMED'
+                                    : scheme.matured
+                                        ? 'PLAN MATURED'
+                                        : 'GOLD PLAN ACTIVE',
                                 style: AppTypography.sans(
                                   size: 7,
                                   weight: FontWeight.w800,
@@ -112,9 +122,11 @@ class SchemeProgressCard extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 child: Text(
-                                  scheme.matured
-                                      ? 'Fully paid'
-                                      : '${scheme.remainingInstallments} remaining',
+                                  scheme.isRedeemed.value
+                                      ? 'Complete'
+                                      : scheme.matured
+                                          ? 'Fully paid'
+                                          : '${scheme.remainingInstallments} remaining',
                                   style: AppTypography.sans(
                                     size: 7,
                                     weight: FontWeight.w700,
@@ -127,7 +139,11 @@ class SchemeProgressCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'SAVED SO FAR',
+                          scheme.isRedeemed.value
+                              ? 'TOTAL REDEEMED'
+                              : scheme.matured
+                                  ? 'TOTAL SAVED'
+                                  : 'SAVED SO FAR',
                           style: AppTypography.sans(
                             size: 7,
                             weight: FontWeight.w800,
@@ -184,7 +200,11 @@ class SchemeProgressCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Next ${scheme.money(scheme.monthlyAmount.value)} · ${scheme.dateLabel(scheme.nextDueDate)}',
+                          scheme.isRedeemed.value
+                              ? 'Redeemed · ref ${scheme.redemptionReference.value}'
+                              : scheme.matured
+                                  ? 'Ready to redeem · matured ${scheme.dateLabel(scheme.maturityDate)}'
+                                  : 'Next ${scheme.money(scheme.monthlyAmount.value)} · ${scheme.dateLabel(scheme.nextDueDate)}',
                           style: AppTypography.sans(
                             size: 8,
                             color: AppColors.muted,
@@ -195,7 +215,11 @@ class SchemeProgressCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                'Due in 20 days',
+                                scheme.isRedeemed.value
+                                    ? 'Plan completed'
+                                    : scheme.matured
+                                        ? 'Maturity reached'
+                                        : 'Due in 20 days',
                                 style: AppTypography.sans(
                                   size: 7,
                                   weight: FontWeight.w700,
@@ -206,7 +230,11 @@ class SchemeProgressCard extends StatelessWidget {
                             SizedBox(
                               height: 28,
                               child: FilledButton(
-                                onPressed: AppSheets.showSchemePayment,
+                                onPressed: scheme.isRedeemed.value
+                                    ? AppSheets.showSchemeDetails
+                                    : scheme.matured
+                                        ? AppSheets.showRedemption
+                                        : AppSheets.showSchemePayment,
                                 style: FilledButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 11,
@@ -216,7 +244,11 @@ class SchemeProgressCard extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'Pay ${scheme.money(scheme.monthlyAmount.value)}  →',
+                                  scheme.isRedeemed.value
+                                      ? 'View details  →'
+                                      : scheme.matured
+                                          ? 'Redeem now  →'
+                                          : 'Pay ${scheme.money(scheme.monthlyAmount.value)}  →',
                                   style: AppTypography.sans(
                                     size: 7,
                                     weight: FontWeight.w800,
@@ -254,29 +286,73 @@ class _ProgressRing extends StatelessWidget {
       child: CustomPaint(
         painter: _RingPainter(progress: scheme.progress),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${scheme.paidInstallments.value}',
-                style: AppTypography.serif(
-                  size: 22,
-                  weight: FontWeight.w500,
-                  height: 1,
+          child: scheme.matured
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.goldLight, AppColors.goldDeep],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x38975C06),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '✓',
+                        style: AppTypography.sans(
+                          size: 12,
+                          weight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      scheme.isRedeemed.value ? 'REDEEMED' : 'MATURED',
+                      style: AppTypography.sans(
+                        size: 6,
+                        weight: FontWeight.w800,
+                        color: AppColors.goldDark,
+                        letterSpacing: .6,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${scheme.paidInstallments.value}',
+                      style: AppTypography.serif(
+                        size: 22,
+                        weight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '/${scheme.totalInstallments}',
+                      style: AppTypography.sans(
+                        size: 10,
+                        weight: FontWeight.w600,
+                        color: AppColors.muted,
+                        height: 1,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '/${scheme.totalInstallments}',
-                style: AppTypography.sans(
-                  size: 10,
-                  weight: FontWeight.w600,
-                  color: AppColors.muted,
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
