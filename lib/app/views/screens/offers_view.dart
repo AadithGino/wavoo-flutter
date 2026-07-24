@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/navigation_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../widgets/page_heading.dart';
 
 class OffersView extends StatelessWidget {
@@ -18,7 +19,7 @@ class OffersView extends StatelessWidget {
           subtitle: 'Curated privileges for you',
         ),
         _OfferTile(
-          height: 195,
+          height: 156,
           image: 'assets/images/design_08.webp',
           tag: '✦ FESTIVE SEASON',
           title: 'Festive Gold Edit',
@@ -28,7 +29,7 @@ class OffersView extends StatelessWidget {
           onTap: () => Get.find<NavigationController>().changePage(1),
         ),
         _OfferTile(
-          height: 195,
+          height: 132,
           tag: '✦ BY APPOINTMENT',
           title: 'Bridal Privilege',
           text:
@@ -36,16 +37,18 @@ class OffersView extends StatelessWidget {
           button: 'BOOK NOW',
           onTap: () =>
               _message('Your private styling request has been received.'),
-          color: const Color(0xFF442016),
+          color: AppColors.ivory,
+          dark: false,
         ),
         _OfferTile(
-          height: 195,
+          height: 132,
           tag: '✦ MEMBERS ONLY',
           title: 'Golden Rewards',
           text: 'Earn double points every time you shop with Wavoo Jewellers.',
           button: 'JOIN FREE',
           onTap: () => _message('Welcome to Golden Rewards!'),
-          color: const Color(0xFF283124),
+          color: const Color(0xFFFFF9F0),
+          dark: false,
         ),
       ],
     );
@@ -71,6 +74,7 @@ class _OfferTile extends StatelessWidget {
     this.image,
     this.height = 190,
     this.color = AppColors.goldDark,
+    this.dark = true,
   });
   final String tag;
   final String title;
@@ -80,6 +84,7 @@ class _OfferTile extends StatelessWidget {
   final String? image;
   final double height;
   final Color color;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -87,7 +92,8 @@ class _OfferTile extends StatelessWidget {
     margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
     decoration: BoxDecoration(
       color: color,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
+      border: dark ? null : Border.all(color: const Color(0xFFEADBC4)),
       image: image == null
           ? null
           : DecorationImage(image: AssetImage(image!), fit: BoxFit.cover),
@@ -95,10 +101,14 @@ class _OfferTile extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     child: Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xDC100A05), Color(0x42100A05)],
-        ),
+      decoration: BoxDecoration(
+        gradient: dark
+            ? const LinearGradient(
+                colors: [Color(0xF71F1812), Color(0x473F2A0D)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFFFFFDF9), Color(0xB8FFF9F0)],
+              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,8 +117,8 @@ class _OfferTile extends StatelessWidget {
           Text(
             tag,
             style: TextStyle(
-              color: AppColors.goldSoft,
-              fontSize: 9,
+              color: dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
+              fontSize: 7,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.1,
             ),
@@ -116,10 +126,11 @@ class _OfferTile extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w600,
+            style: AppTypography.serif(
+              size: 24,
+              color: dark ? Colors.white : AppColors.ink,
+              height: 1.05,
+              letterSpacing: -.48,
             ),
           ),
           const SizedBox(height: 7),
@@ -127,19 +138,24 @@ class _OfferTile extends StatelessWidget {
             width: 270,
             child: Text(
               text,
-              style: TextStyle(color: Colors.white70, height: 1.35),
+              style: TextStyle(
+                color: dark ? Colors.white70 : AppColors.muted,
+                fontSize: 9,
+                height: 1.5,
+              ),
             ),
           ),
           const SizedBox(height: 14),
           TextButton.icon(
             onPressed: onTap,
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor:
+                  dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
               padding: EdgeInsets.zero,
             ),
             label: Text(
               button,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
             ),
             icon: const Icon(Icons.arrow_forward, size: 17),
           ),

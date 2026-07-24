@@ -7,17 +7,19 @@ class PageHeading extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.horizontalPadding = 16,
     super.key,
   });
 
   final String title;
   final String subtitle;
   final Widget? trailing;
+  final double horizontalPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -29,12 +31,15 @@ class PageHeading extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
           ),
-          ?trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );

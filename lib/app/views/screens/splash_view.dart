@@ -79,7 +79,6 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Replace Icon with Image.asset('assets/logo.png') in real app
                 Image.asset("assets/images/logo.png"),
               ],
             ),

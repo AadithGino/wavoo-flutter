@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/navigation_controller.dart';
-import '../../controllers/scheme_controller.dart';
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../widgets/product_card.dart';
-import '../widgets/sheets.dart';
+import '../widgets/scheme_progress_card.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -55,7 +55,6 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final shop = Get.find<ShopController>();
-    final scheme = Get.find<SchemeController>();
     final nav = Get.find<NavigationController>();
     return ListView(
       padding: const EdgeInsets.fromLTRB(13, 9, 13, 24),
@@ -103,10 +102,10 @@ class _HomeViewState extends State<HomeView> {
                               const SizedBox(height: 5),
                               Text(
                                 slide.$3,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  height: 1.03,
-                                  fontWeight: FontWeight.w600,
+                                style: AppTypography.serif(
+                                  size: 23,
+                                  height: .99,
+                                  letterSpacing: -.58,
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -173,59 +172,7 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(height: 12),
-        Obx(
-          () => Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cream,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: AppColors.line),
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: Colors.white,
-                  child: Icon(Icons.savings_outlined),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'MY GOLD SCHEME',
-                        style: TextStyle(
-                          color: AppColors.goldDark,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      Text(
-                        '₹${scheme.savedAmount} saved',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 5),
-                      LinearProgressIndicator(
-                        value: scheme.progress,
-                        minHeight: 5,
-                        borderRadius: BorderRadius.circular(6),
-                        color: AppColors.gold,
-                        backgroundColor: AppColors.goldSoft,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                TextButton(
-                  onPressed: AppSheets.showSchemePayment,
-                  child: const Text('PAY NOW'),
-                ),
-              ],
-            ),
-          ),
-        ),
+        SchemeProgressCard(onOpenPlan: () => nav.changePage(2)),
         const SizedBox(height: 12),
         InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -258,11 +205,7 @@ class _HomeViewState extends State<HomeView> {
                         SizedBox(height: 4),
                         Text(
                           'Save More,\nShine More',
-                          style: TextStyle(
-                            fontSize: 22,
-                            height: 1.05,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTypography.serif(size: 20, height: .95),
                         ),
                         const SizedBox(height: 7),
                         Text(
@@ -402,11 +345,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   Text(
                     'Special Offers',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTypography.serif(size: 20, color: Colors.white),
                   ),
                   Text(
                     'Up to 20% off on selected making charges',

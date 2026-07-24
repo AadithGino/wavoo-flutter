@@ -18,12 +18,12 @@ class ProductCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         onTap: () => AppSheets.showProduct(product),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.line),
           ),
           clipBehavior: Clip.antiAlias,
@@ -37,23 +37,23 @@ class ProductCard extends StatelessWidget {
                   children: [
                     Image.asset(product.image, fit: BoxFit.cover),
                     Positioned(
-                      left: 8,
-                      top: 8,
+                      left: 4,
+                      top: 4,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: AppColors.gold.withOpacity(0.92),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 4,
+                            vertical: 5,
                           ),
                           child: Text(
                             product.tag.toUpperCase(),
                             style: TextStyle(
                               color: AppColors.ivory,
-                              fontSize: 8,
+                              fontSize: 5,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -94,10 +94,7 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: const TextStyle(fontSize: 10, height: 1.25),
                     ),
                     const SizedBox(height: 5),
                     Row(
@@ -106,7 +103,8 @@ class ProductCard extends StatelessWidget {
                           '₹${product.price}',
                           style: TextStyle(
                             color: AppColors.goldDark,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -114,7 +112,7 @@ class ProductCard extends StatelessWidget {
                           '₹${product.oldPrice}',
                           style: TextStyle(
                             color: AppColors.muted,
-                            fontSize: 10,
+                            fontSize: 8,
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),

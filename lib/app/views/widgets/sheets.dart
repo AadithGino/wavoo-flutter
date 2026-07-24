@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/scheme_controller.dart';
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../data/models/product.dart';
 import 'primary_button.dart';
 
@@ -13,10 +15,10 @@ abstract final class AppSheets {
       SafeArea(
         top: false,
         child: Container(
-          constraints: BoxConstraints(maxHeight: Get.height * 0.9),
+          constraints: BoxConstraints(maxHeight: Get.height * 0.88),
           decoration: const BoxDecoration(
-            color: AppColors.ivory,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
           ),
           child: child,
         ),
@@ -39,16 +41,23 @@ abstract final class AppSheets {
         ),
       ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(18, 8, 8, 8),
+        padding: const EdgeInsets.fromLTRB(17, 8, 9, 8),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
+                style: AppTypography.serif(size: 22),
               ),
             ),
-            IconButton(onPressed: Get.back, icon: const Icon(Icons.close)),
+            IconButton(
+              onPressed: Get.back,
+              icon: SvgPicture.asset(
+                'assets/svg/close.svg',
+                width: 20,
+                height: 20,
+              ),
+            ),
           ],
         ),
       ),
@@ -331,34 +340,111 @@ abstract final class AppSheets {
                   ? const Center(
                       child: Text('Your saved jewellery will appear here.'),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: .72,
+                          ),
                       itemCount: items.length,
                       itemBuilder: (_, index) {
                         final product = items[index];
-                        return ListTile(
-                          leading: Image.asset(
-                            product.image,
-                            width: 58,
-                            fit: BoxFit.cover,
-                          ),
-                          title: Text(product.name),
-                          subtitle: Text('₹${product.price}'),
-                          trailing: IconButton(
-                            onPressed: () => shop.toggleWishlist(product.id),
-                            icon: const Icon(Icons.favorite),
-                          ),
-                          onTap: () {
-                            Get.back<void>();
-                            showProduct(product);
-                          },
-                        );
+                        return _savedProductCard(product, shop);
                       },
                     ),
             ),
           ],
         );
       }),
+    );
+  }
+
+  static Widget _savedProductCard(Product product, ShopController shop) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          Get.back<void>();
+          showProduct(product);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.line),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(product.image, fit: BoxFit.cover),
+                    Positioned(
+                      top: 7,
+                      right: 7,
+                      child: Material(
+                        color: Colors.white.withOpacity(.92),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => shop.toggleWishlist(product.id),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: Icon(
+                              Icons.favorite,
+                              size: 16,
+                              color: AppColors.goldDark,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.category.toUpperCase(),
+                      style: AppTypography.sans(
+                        size: 7,
+                        weight: FontWeight.w700,
+                        color: AppColors.gold,
+                        letterSpacing: .7,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.serif(size: 14),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '₹${product.price}',
+                      style: AppTypography.sans(
+                        size: 10,
+                        weight: FontWeight.w800,
+                        color: AppColors.goldDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -452,20 +538,64 @@ abstract final class AppSheets {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
                       itemCount: shop.orders.length,
-                      separatorBuilder: (_, __) => const Divider(),
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, index) {
                         final order = shop.orders[index];
-                        return ListTile(
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.shopping_bag_outlined),
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.line),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text('Order ${order.id}'),
-                          subtitle: Text(
-                            '${order.itemCount} items • ${order.status}',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Order ${order.id}',
+                                      style: AppTypography.sans(
+                                        size: 10,
+                                        weight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.successSoft,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      order.status.toUpperCase(),
+                                      style: AppTypography.sans(
+                                        size: 7,
+                                        weight: FontWeight.w800,
+                                        color: AppColors.successDark,
+                                        letterSpacing: .42,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 9),
+                              Text(
+                                '${order.itemCount} ${order.itemCount == 1 ? 'item' : 'items'} · ₹${order.total}',
+                                style: AppTypography.sans(
+                                  size: 8,
+                                  color: AppColors.muted,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ],
                           ),
-                          trailing: Text('₹${order.total}'),
                         );
                       },
                     ),
@@ -485,112 +615,635 @@ abstract final class AppSheets {
             _header('Saved Addresses'),
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
                 itemCount: shop.addresses.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, index) {
                   final address = shop.addresses[index];
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(14),
+                  return Material(
+                    color: address.isDefault ? AppColors.cream : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: address.isDefault
+                          ? null
+                          : () => shop.setDefaultAddress(address.id),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: address.isDefault
+                                ? AppColors.gold
+                                : AppColors.line,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: address.isDefault
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x2EB97911),
+                                    blurRadius: 0,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  address.label,
+                                  style: AppTypography.sans(
+                                    size: 10,
+                                    weight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (address.isDefault)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gold.withOpacity(.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      'DEFAULT',
+                                      style: AppTypography.sans(
+                                        size: 6,
+                                        weight: FontWeight.w800,
+                                        color: AppColors.goldDark,
+                                        letterSpacing: .48,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              address.user,
+                              style: AppTypography.sans(
+                                size: 9,
+                                weight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              address.lines,
+                              style: AppTypography.sans(
+                                size: 8,
+                                color: AppColors.muted,
+                                height: 1.45,
+                              ),
+                            ),
+                            if (!address.isDefault) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'SET AS DEFAULT',
+                                style: AppTypography.sans(
+                                  size: 7,
+                                  weight: FontWeight.w800,
+                                  color: AppColors.goldDark,
+                                  letterSpacing: .56,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showSchemeDetails() {
+    final scheme = Get.find<SchemeController>();
+    _open(
+      Obx(
+        () => Column(
+          children: [
+            _header('My Gold Scheme'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFBD7E18), Color(0xFF835004)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x3B8A5404),
+                          blurRadius: 35,
+                          offset: Offset(0, 16),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'ACTIVE GOLD PLAN',
+                                    style: AppTypography.sans(
+                                      size: 8,
+                                      color: Colors.white70,
+                                      letterSpacing: .88,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    scheme.planName,
+                                    style: AppTypography.serif(
+                                      size: 21,
+                                      color: Colors.white,
+                                      height: 1.08,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(.13),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(color: Colors.white30),
+                              ),
+                              child: Text(
+                                'ACTIVE',
+                                style: AppTypography.sans(
+                                  size: 7,
+                                  weight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: .56,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Saved so far',
+                          style: AppTypography.sans(
+                            size: 9,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          scheme.money(scheme.savedAmount),
+                          style: AppTypography.serif(
+                            size: 32,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 17),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${scheme.paidInstallments.value} of ${scheme.totalInstallments} instalments',
+                              style: AppTypography.sans(
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${scheme.progressPercent}%',
+                              style: AppTypography.sans(
+                                size: 8,
+                                weight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 7),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: scheme.progress,
+                            minHeight: 7,
+                            color: const Color(0xFFFFF2CF),
+                            backgroundColor: Colors.white24,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _schemeStat(
+                          'Monthly amount',
+                          scheme.money(scheme.monthlyAmount.value),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _schemeStat(
+                          'Next due',
+                          scheme.dateLabel(scheme.nextDueDate),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _schemeStat(
+                          'Maturity',
+                          scheme.dateLabel(scheme.maturityDate),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 19),
+                  Text(
+                    'Payment history',
+                    style: AppTypography.serif(size: 18),
+                  ),
+                  const SizedBox(height: 9),
+                  Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.line),
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (var index = 0;
+                            index < scheme.payments.length;
+                            index++)
+                          _schemeScheduleRow(
+                            scheme,
+                            scheme.payments[index],
+                            paid: true,
+                            showDivider: index != scheme.payments.length - 1,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 19),
+                  Text(
+                    'Upcoming payments',
+                    style: AppTypography.serif(size: 18),
+                  ),
+                  const SizedBox(height: 9),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.line),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (var index = 0;
+                            index < scheme.upcomingPayments.length;
+                            index++)
+                          _schemeScheduleRow(
+                            scheme,
+                            scheme.upcomingPayments[index],
+                            paid: false,
+                            showDivider:
+                                index != scheme.upcomingPayments.length - 1,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _schemeStat(String label, String value) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTypography.sans(size: 7, color: AppColors.muted),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.sans(size: 10, weight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _schemeScheduleRow(
+    SchemeController scheme,
+    SchemePayment payment, {
+    required bool paid,
+    required bool showDivider,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: payment.isNext ? AppColors.cream : Colors.white,
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: AppColors.line))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: paid
+                  ? AppColors.successSoft
+                  : payment.isNext
+                      ? AppColors.gold
+                      : const Color(0xFFFFF7E8),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              paid ? '✓' : payment.isNext ? '●' : '${payment.installment}',
+              style: AppTypography.sans(
+                size: paid ? 12 : 8,
+                weight: FontWeight.w800,
+                color: paid
+                    ? AppColors.successDark
+                    : payment.isNext
+                        ? Colors.white
+                        : AppColors.goldDark,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Instalment ${payment.installment}${payment.isNext ? ' · Due next' : ''}',
+                  style: AppTypography.sans(
+                    size: 9,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  paid
+                      ? '${scheme.dateLabel(payment.date)} · ${payment.receipt}'
+                      : '${scheme.dateLabel(payment.date)} · ${scheme.money(payment.amount)}',
+                  style: AppTypography.sans(
+                    size: 7,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            scheme.money(payment.amount),
+            style: AppTypography.sans(
+              size: 10,
+              weight: FontWeight.w700,
+              color: AppColors.goldDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void showSchemeEnrollment() {
+    final scheme = Get.find<SchemeController>();
+    _open(
+      Obx(
+        () => Column(
+          children: [
+            _header('Wavoo Gold Scheme'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: Image.asset(
+                      'assets/images/design_01.webp',
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 17),
+                  Text(
+                    'Save today. Shine tomorrow.',
+                    style: AppTypography.serif(size: 25, height: 1),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Choose a comfortable monthly plan and build your jewellery savings with Wavoo.',
+                    style: AppTypography.sans(
+                      size: 10,
+                      color: AppColors.muted,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      for (final months in [11, 6, 12]) ...[
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => scheme.choosePlan(months),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    scheme.selectedPlanMonths.value == months
+                                        ? AppColors.cream
+                                        : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color:
+                                      scheme.selectedPlanMonths.value == months
+                                          ? AppColors.gold
+                                          : AppColors.line,
+                                  width:
+                                      scheme.selectedPlanMonths.value == months
+                                          ? 2
+                                          : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '$months Months',
+                                    style: AppTypography.serif(
+                                      size: 15,
+                                      color: AppColors.goldDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    months == 11
+                                        ? 'Most popular'
+                                        : months == 6
+                                            ? 'Flexible plan'
+                                            : 'Maximum value',
+                                    style: AppTypography.sans(
+                                      size: 7,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (months != 12) const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Monthly contribution',
+                    style: AppTypography.sans(
+                      size: 9,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: AppColors.line),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                     child: Row(
                       children: [
-                        // const Icon(Icons.home_outlined, color: AppColors.goldDark),
-                        // const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    address.label,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  SizedBox(width: 10),
-                                  address.isDefault
-                                      ? Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.goldSoft
-                                                .withOpacity(.3),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            "DEFAULT",
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w800,
-                                              color: AppColors.goldDark,
-                                            ),
-                                          ),
-                                        )
-                                      : SizedBox.shrink(),
-                                ],
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                address.user,
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                address.lines,
-                                style: TextStyle(
-                                  color: AppColors.muted,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              address.isDefault == false
-                                  ? SizedBox(height: 6)
-                                  : SizedBox.shrink(),
-                              address.isDefault == false
-                                  ? Text(
-                                      "Set default",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.goldDark,
-                                      ),
-                                    )
-                                  : SizedBox.shrink(),
-                            ],
+                        Text(
+                          '₹',
+                          style: AppTypography.sans(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: AppColors.goldDark,
                           ),
                         ),
-                        // const Chip(label: Text('Default')),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            '${scheme.monthlyAmount.value}',
+                            style: AppTypography.sans(size: 12),
+                          ),
+                        ),
+                        PopupMenuButton<int>(
+                          icon: const Icon(
+                            Icons.expand_more,
+                            color: AppColors.goldDark,
+                          ),
+                          onSelected: scheme.chooseAmount,
+                          itemBuilder: (_) => [5000, 10000, 15000, 25000]
+                              .map(
+                                (amount) => PopupMenuItem(
+                                  value: amount,
+                                  child: Text(scheme.money(amount)),
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ],
                     ),
-                  );
-
-                  // Card(
-                  //   child: ListTile(
-                  //     leading: Icon(
-                  //       address.label == 'Home'
-                  //           ? Icons.home_outlined
-                  //           : Icons.work_outline,
-                  //     ),
-                  //     title: Text(address.label),
-                  //     subtitle: Text(address.lines),
-                  //     trailing: address.isDefault
-                  //         ? const Chip(label: Text('Default'))
-                  //         : TextButton(
-                  //             onPressed: () =>
-                  //                 shop.setDefaultAddress(address.id),
-                  //             child: const Text('Set default'),
-                  //           ),
-                  //   ),
-                  // );
-                },
+                  ),
+                  const SizedBox(height: 13),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F2E9),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: AppColors.gold,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Save ${scheme.money(scheme.monthlyAmount.value * scheme.selectedPlanMonths.value)} over ${scheme.selectedPlanMonths.value} months and unlock exclusive Wavoo scheme benefits.',
+                            style: AppTypography.sans(
+                              size: 9,
+                              color: const Color(0xFF5E574E),
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 13),
+                  SizedBox(
+                    height: 47,
+                    child: FilledButton(
+                      onPressed: scheme.joinScheme,
+                      child: Text(
+                        'START MY GOLD SAVINGS',
+                        style: AppTypography.sans(
+                          size: 11,
+                          weight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -618,7 +1271,7 @@ abstract final class AppSheets {
                 const SizedBox(height: 12),
                 Text(
                   '₹${scheme.monthlyAmount.value}',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
+                  style: AppTypography.serif(size: 32),
                 ),
                 Text(
                   'Secure payment for your Wavoo Gold Scheme',
