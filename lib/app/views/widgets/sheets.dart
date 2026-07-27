@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/scheme_controller.dart';
 import '../../controllers/shop_controller.dart';
@@ -29,41 +32,41 @@ abstract final class AppSheets {
   }
 
   static Widget _header(String title) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const SizedBox(height: 9),
-      Container(
-        width: 42,
-        height: 4,
-        decoration: BoxDecoration(
-          color: AppColors.line,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(17, 8, 9, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTypography.serif(size: 22),
-              ),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 9),
+          Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.line,
+              borderRadius: BorderRadius.circular(4),
             ),
-            IconButton(
-              onPressed: Get.back,
-              icon: SvgPicture.asset(
-                'assets/svg/close.svg',
-                width: 20,
-                height: 20,
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(17, 8, 9, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTypography.serif(size: 22),
+                  ),
+                ),
+                IconButton(
+                  onPressed: Get.back,
+                  icon: SvgPicture.asset(
+                    'assets/svg/close.svg',
+                    width: 20,
+                    height: 20,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      const Divider(height: 1),
-    ],
-  );
+          ),
+          const Divider(height: 1),
+        ],
+      );
 
   static void showSearch() {
     final shop = Get.find<ShopController>()..clearSearch();
@@ -517,6 +520,143 @@ abstract final class AppSheets {
     return '₹${groups.join(',')},$tail';
   }
 
+  static void showContactWavoo() {
+    _open(
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _header('Contact Wavoo'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'We are here to help',
+                  style: AppTypography.serif(size: 22),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  'Contact Wavoo Jewellers using the phone number or email address below.',
+                  style: AppTypography.sans(
+                    size: 10,
+                    color: AppColors.muted,
+                    height: 1.55,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _contactAction(
+                  icon: Icons.phone_outlined,
+                  label: 'Company Mobile No',
+                  value: '8925162888',
+                  onTap: () => _launchContact(
+                    Uri(scheme: 'tel', path: '8925162888'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _contactAction(
+                  icon: Icons.mail_outline,
+                  label: 'Company Email',
+                  value: 'wavoojewellers@yahoo.com',
+                  onTap: () => _launchContact(
+                    Uri(
+                      scheme: 'mailto',
+                      path: 'wavoojewellers@yahoo.com',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _contactAction({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.line),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 20, color: AppColors.goldDark),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.sans(
+                        size: 8,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: AppTypography.sans(
+                        size: 11,
+                        weight: FontWeight.w700,
+                        color: AppColors.goldDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_outward,
+                size: 17,
+                color: AppColors.goldDark,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _launchContact(Uri uri) async {
+    try {
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (opened) return;
+    } catch (e) {
+      log(e.toString());
+      _toast('Error $e');
+      // The user receives the same message for unsupported platform handlers.
+    }
+    // if (Get.isBottomSheetOpen == true) {
+    //   _toast('Unable to open this contact option on your device');
+    // }
+  }
+
   static void showCart() {
     final shop = Get.find<ShopController>();
     _open(
@@ -618,7 +758,10 @@ abstract final class AppSheets {
                       label: 'PROCEED TO CHECKOUT',
                       onPressed: () {
                         Get.back<void>();
-                        showCheckout();
+                        Future<void>.delayed(
+                          const Duration(milliseconds: 220),
+                          AppSheets.showCheckout,
+                        );
                       },
                     ),
                   ],
@@ -634,9 +777,8 @@ abstract final class AppSheets {
     final shop = Get.find<ShopController>();
     _open(
       Obx(() {
-        final items = shop.products
-            .where((p) => shop.wishlist.contains(p.id))
-            .toList();
+        final items =
+            shop.products.where((p) => shop.wishlist.contains(p.id)).toList();
         return Column(
           children: [
             _header('Saved Jewellery'),
@@ -649,11 +791,11 @@ abstract final class AppSheets {
                       padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: .72,
-                          ),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: .72,
+                      ),
                       itemCount: items.length,
                       itemBuilder: (_, index) {
                         final product = items[index];
@@ -1309,7 +1451,11 @@ abstract final class AppSheets {
               shape: BoxShape.circle,
             ),
             child: Text(
-              paid ? '✓' : payment.isNext ? '●' : '${payment.installment}',
+              paid
+                  ? '✓'
+                  : payment.isNext
+                      ? '●'
+                      : '${payment.installment}',
               style: AppTypography.sans(
                 size: paid ? 12 : 8,
                 weight: FontWeight.w800,
@@ -1407,10 +1553,9 @@ abstract final class AppSheets {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    scheme.selectedPlanMonths.value == months
-                                        ? AppColors.cream
-                                        : Colors.white,
+                                color: scheme.selectedPlanMonths.value == months
+                                    ? AppColors.cream
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color:
@@ -1586,8 +1731,7 @@ abstract final class AppSheets {
                 PrimaryButton(
                   label: 'PAY SECURELY',
                   onPressed: () {
-                    final reachesMaturity =
-                        scheme.paidInstallments.value ==
+                    final reachesMaturity = scheme.paidInstallments.value ==
                         scheme.totalInstallments - 1;
                     scheme.payInstallment();
                     if (reachesMaturity) {
@@ -2241,8 +2385,7 @@ class _ProductSpecs {
       hallmark: isDiamond ? 'BIS 750 HUID' : 'BIS 916 HUID',
       grossWeight: grossWeights[index],
       netWeight: netWeights[index],
-      productCode:
-          'WAV-$codePrefix-${(1000 + product.id * 37).toString()}',
+      productCode: 'WAV-$codePrefix-${(1000 + product.id * 37).toString()}',
       size: sizes[index],
       stoneDetails: stoneDetails[index],
       stoneWeight: stoneWeights[index],
