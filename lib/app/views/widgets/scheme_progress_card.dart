@@ -18,9 +18,7 @@ class SchemeProgressCard extends StatelessWidget {
     final scheme = Get.find<SchemeController>();
     return Obx(
       () => InkWell(
-        onTap: scheme.matured
-            ? AppSheets.showRedemption
-            : onOpenPlan,
+        onTap: scheme.matured ? AppSheets.showRedemption : onOpenPlan,
         borderRadius: BorderRadius.circular(13),
         child: Container(
           margin: const EdgeInsets.only(top: 14, bottom: 4),
@@ -104,7 +102,7 @@ class SchemeProgressCard extends StatelessWidget {
                                         ? 'PLAN MATURED'
                                         : 'GOLD PLAN ACTIVE',
                                 style: AppTypography.sans(
-                                  size: 7,
+                                  size: 9,
                                   weight: FontWeight.w800,
                                   color: AppColors.goldDark,
                                   letterSpacing: .9,
@@ -128,7 +126,7 @@ class SchemeProgressCard extends StatelessWidget {
                                           ? 'Fully paid'
                                           : '${scheme.remainingInstallments} remaining',
                                   style: AppTypography.sans(
-                                    size: 7,
+                                    size: 9,
                                     weight: FontWeight.w700,
                                     color: AppColors.goldDark,
                                   ),
@@ -145,7 +143,7 @@ class SchemeProgressCard extends StatelessWidget {
                                   ? 'TOTAL SAVED'
                                   : 'SAVED SO FAR',
                           style: AppTypography.sans(
-                            size: 7,
+                            size: 9,
                             weight: FontWeight.w800,
                             color: AppColors.muted,
                             letterSpacing: .84,
@@ -191,7 +189,7 @@ class SchemeProgressCard extends StatelessWidget {
                             Text(
                               '${scheme.progressPercent}%',
                               style: AppTypography.sans(
-                                size: 8,
+                                size: 10,
                                 weight: FontWeight.w800,
                                 color: AppColors.goldDark,
                               ),
@@ -206,7 +204,7 @@ class SchemeProgressCard extends StatelessWidget {
                                   ? 'Ready to redeem · matured ${scheme.dateLabel(scheme.maturityDate)}'
                                   : 'Next ${scheme.money(scheme.monthlyAmount.value)} · ${scheme.dateLabel(scheme.nextDueDate)}',
                           style: AppTypography.sans(
-                            size: 8,
+                            size: 10,
                             color: AppColors.muted,
                           ),
                         ),
@@ -221,7 +219,7 @@ class SchemeProgressCard extends StatelessWidget {
                                         ? 'Maturity reached'
                                         : 'Due in 20 days',
                                 style: AppTypography.sans(
-                                  size: 7,
+                                  size: 9,
                                   weight: FontWeight.w700,
                                   color: AppColors.muted,
                                 ),
@@ -250,7 +248,7 @@ class SchemeProgressCard extends StatelessWidget {
                                           ? 'Redeem now  →'
                                           : 'Pay ${scheme.money(scheme.monthlyAmount.value)}  →',
                                   style: AppTypography.sans(
-                                    size: 7,
+                                    size: 9,
                                     weight: FontWeight.w800,
                                     color: Colors.white,
                                     letterSpacing: .28,

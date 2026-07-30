@@ -129,7 +129,7 @@ class ProfileView extends StatelessWidget {
                                   child: Text(
                                     "DEFAULT",
                                     style: AppTypography.sans(
-                                      size: 6,
+                                      size: 8,
                                       weight: FontWeight.w800,
                                       color: AppColors.goldDark,
                                       letterSpacing: .48,
@@ -143,7 +143,7 @@ class ProfileView extends StatelessWidget {
                       Text(
                         address.user,
                         style: AppTypography.sans(
-                          size: 9,
+                          size: 10,
                           weight: FontWeight.w700,
                         ),
                       ),
@@ -151,7 +151,7 @@ class ProfileView extends StatelessWidget {
                       Text(
                         address.lines,
                         style: AppTypography.sans(
-                          size: 8,
+                          size: 9,
                           color: AppColors.muted,
                           height: 1.45,
                         ),
@@ -209,27 +209,27 @@ class ProfileView extends StatelessWidget {
   }
 
   void _message(String value) => Get.showSnackbar(
-    GetSnackBar(
-      duration: const Duration(seconds: 2),
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 88),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-      borderRadius: 20,
-      backgroundColor: const Color(0xFF211D18),
-      boxShadows: const [
-        BoxShadow(
-          color: Color(0x38000000),
-          blurRadius: 30,
-          offset: Offset(0, 8),
+        GetSnackBar(
+          duration: const Duration(seconds: 2),
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 88),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+          borderRadius: 20,
+          backgroundColor: const Color(0xFF211D18),
+          boxShadows: const [
+            BoxShadow(
+              color: Color(0x38000000),
+              blurRadius: 30,
+              offset: Offset(0, 8),
+            ),
+          ],
+          messageText: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: AppTypography.sans(size: 10, color: Colors.white),
+          ),
         ),
-      ],
-      messageText: Text(
-        value,
-        textAlign: TextAlign.center,
-        style: AppTypography.sans(size: 10, color: Colors.white),
-      ),
-    ),
-  );
+      );
 }
 
 class _ProfileItem extends StatelessWidget {
@@ -244,35 +244,35 @@ class _ProfileItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    child: SizedBox(
-      height: 49,
-      child: Row(
-        children: [
-          const SizedBox(width: 15),
-          SvgPicture.asset(
-            svgAsset,
-            width: 18,
-            height: 18,
-            colorFilter: const ColorFilter.mode(
-              AppColors.goldDark,
-              BlendMode.srcIn,
-            ),
+        onTap: onTap,
+        child: SizedBox(
+          height: 49,
+          child: Row(
+            children: [
+              const SizedBox(width: 15),
+              SvgPicture.asset(
+                svgAsset,
+                width: 18,
+                height: 18,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.goldDark,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: AppTypography.sans(size: 11))),
+              SvgPicture.asset(
+                'assets/svg/chevron-right-svgrepo-com.svg',
+                width: 13,
+                height: 13,
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFFA49B90),
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 15),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: AppTypography.sans(size: 11))),
-          SvgPicture.asset(
-            'assets/svg/chevron-right-svgrepo-com.svg',
-            width: 13,
-            height: 13,
-            colorFilter: const ColorFilter.mode(
-              Color(0xFFA49B90),
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(width: 15),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }

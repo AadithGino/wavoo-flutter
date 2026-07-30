@@ -39,7 +39,7 @@ abstract final class AppTheme {
         indicatorColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => AppTypography.sans(
-            size: 7,
+            size: 9,
             weight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
                 : FontWeight.w400,

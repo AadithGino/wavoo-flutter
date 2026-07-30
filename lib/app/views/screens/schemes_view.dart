@@ -125,7 +125,7 @@ class _PlanCard extends StatelessWidget {
                               ? 'MATURED PLAN'
                               : 'ACTIVE PLAN',
                       style: AppTypography.sans(
-                        size: 7,
+                        size: 9,
                         weight: FontWeight.w800,
                         color: AppColors.goldDark,
                         letterSpacing: .84,
@@ -153,7 +153,7 @@ class _PlanCard extends StatelessWidget {
                           ? 'MATURED'
                           : 'ACTIVE',
                   style: AppTypography.sans(
-                    size: 7,
+                    size: 9,
                     weight: FontWeight.w800,
                     color: AppColors.goldDark,
                     letterSpacing: .56,
@@ -262,7 +262,10 @@ class _PlanCard extends StatelessWidget {
                       weight: FontWeight.w700,
                     ),
                   ),
-                  child: const Text('Full schedule'),
+                  child: const Text(
+                    'Full schedule',
+                    style: TextStyle(fontSize: 10),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -277,7 +280,10 @@ class _PlanCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(scheme.matured ? 'Redeem now' : 'Pay next'),
+                  child: Text(
+                    scheme.matured ? 'Redeem now' : 'Pay next',
+                    style: TextStyle(fontSize: 10),
+                  ),
                 ),
               ),
             ],
@@ -309,7 +315,7 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.sans(size: 7, color: AppColors.muted),
+            style: AppTypography.sans(size: 9, color: AppColors.muted),
           ),
           const SizedBox(height: 6),
           Text(
@@ -368,7 +374,7 @@ class _PaymentRow extends StatelessWidget {
             child: Text(
               payment.isNext ? '●' : '${payment.installment}',
               style: AppTypography.sans(
-                size: 8,
+                size: 10,
                 weight: FontWeight.w800,
                 color: payment.isNext ? Colors.white : AppColors.goldDark,
               ),
@@ -382,7 +388,7 @@ class _PaymentRow extends StatelessWidget {
                 Text(
                   'Instalment ${payment.installment}${payment.isNext ? ' · Due next' : ''}',
                   style: AppTypography.sans(
-                    size: 9,
+                    size: 10,
                     weight: FontWeight.w700,
                   ),
                 ),
@@ -390,7 +396,7 @@ class _PaymentRow extends StatelessWidget {
                 Text(
                   '${scheme.dateLabel(payment.date)} · ${scheme.money(payment.amount)}',
                   style: AppTypography.sans(
-                    size: 7,
+                    size: 10,
                     color: AppColors.muted,
                   ),
                 ),
@@ -575,7 +581,7 @@ class _EnrollmentBenefit extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: AppTypography.sans(
-              size: 6,
+              size: 8,
               color: AppColors.muted,
               height: 1.2,
             ),

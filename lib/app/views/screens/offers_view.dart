@@ -19,7 +19,7 @@ class OffersView extends StatelessWidget {
           subtitle: 'Curated privileges for you',
         ),
         _OfferTile(
-          height: 166,
+          height: 168,
           image: 'assets/images/design_08.webp',
           tag: '✦ FESTIVE SEASON',
           title: 'Festive Gold Edit',
@@ -29,7 +29,7 @@ class OffersView extends StatelessWidget {
           onTap: () => Get.find<NavigationController>().changePage(1),
         ),
         _OfferTile(
-          height: 168,
+          height: 170,
           tag: '✦ BY APPOINTMENT',
           title: 'Bridal Privilege',
           text:
@@ -41,7 +41,7 @@ class OffersView extends StatelessWidget {
           dark: false,
         ),
         _OfferTile(
-          height: 168,
+          height: 18,
           tag: '✦ MEMBERS ONLY',
           title: 'Golden Rewards',
           text: 'Earn double points every time you shop with Wavoo Jewellers.',
@@ -55,13 +55,13 @@ class OffersView extends StatelessWidget {
   }
 
   void _message(String message) => Get.showSnackbar(
-    GetSnackBar(
-      message: message,
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    ),
-  );
+        GetSnackBar(
+          message: message,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        ),
+      );
 }
 
 class _OfferTile extends StatelessWidget {
@@ -88,80 +88,79 @@ class _OfferTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: height,
-    margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-      border: dark ? null : Border.all(color: const Color(0xFFEADBC4)),
-      image: image == null
-          ? null
-          : DecorationImage(image: AssetImage(image!), fit: BoxFit.cover),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: dark
-            ? const LinearGradient(
-                colors: [Color(0xF71F1812), Color(0x473F2A0D)],
-              )
-            : const LinearGradient(
-                colors: [Color(0xFFFFFDF9), Color(0xB8FFF9F0)],
+        height: height,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          border: dark ? null : Border.all(color: const Color(0xFFEADBC4)),
+          image: image == null
+              ? null
+              : DecorationImage(image: AssetImage(image!), fit: BoxFit.cover),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: dark
+                ? const LinearGradient(
+                    colors: [Color(0xF71F1812), Color(0x473F2A0D)],
+                  )
+                : const LinearGradient(
+                    colors: [Color(0xFFFFFDF9), Color(0xB8FFF9F0)],
+                  ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                tag,
+                style: TextStyle(
+                  color: dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.1,
+                ),
               ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            tag,
-            style: TextStyle(
-              color: dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
-              fontSize: 7,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            title,
-            style: AppTypography.serif(
-              size: 24,
-              color: dark ? Colors.white : AppColors.ink,
-              height: 1.05,
-              letterSpacing: -.48,
-            ),
-          ),
-          const SizedBox(height: 7),
-          SizedBox(
-            width: 270,
-            child: Text(
-              text,
-              style: TextStyle(
-                color: dark ? Colors.white70 : AppColors.muted,
-                fontSize: 9,
-                height: 1.5,
+              const SizedBox(height: 7),
+              Text(
+                title,
+                style: AppTypography.serif(
+                  size: 24,
+                  color: dark ? Colors.white : AppColors.ink,
+                  height: 1.05,
+                  letterSpacing: -.48,
+                ),
               ),
-            ),
+              const SizedBox(height: 7),
+              SizedBox(
+                width: 270,
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: dark ? Colors.white70 : AppColors.muted,
+                    fontSize: 9,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextButton.icon(
+                onPressed: onTap,
+                style: TextButton.styleFrom(
+                  foregroundColor:
+                      dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
+                  padding: EdgeInsets.zero,
+                ),
+                label: Text(
+                  button,
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
+                ),
+                icon: const Icon(Icons.arrow_forward, size: 17),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          TextButton.icon(
-            onPressed: onTap,
-            style: TextButton.styleFrom(
-              foregroundColor: dark
-                  ? const Color(0xFFFFE5A8)
-                  : AppColors.goldDark,
-              padding: EdgeInsets.zero,
-            ),
-            label: Text(
-              button,
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
-            ),
-            icon: const Icon(Icons.arrow_forward, size: 17),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }

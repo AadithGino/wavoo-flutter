@@ -270,7 +270,7 @@ abstract final class AppSheets {
                               Text(
                                 'Stone type, count and weight',
                                 style: AppTypography.sans(
-                                  size: 7,
+                                  size: 9,
                                   color: AppColors.muted,
                                 ),
                               ),
@@ -327,7 +327,7 @@ abstract final class AppSheets {
                   Text(
                     'Final invoice value may change slightly based on the live gold rate and verified product weight at billing.',
                     style: AppTypography.sans(
-                      size: 7,
+                      size: 9,
                       color: AppColors.muted,
                       height: 1.5,
                     ),
@@ -434,7 +434,7 @@ abstract final class AppSheets {
         children: [
           Text(
             label,
-            style: AppTypography.sans(size: 7, color: AppColors.muted),
+            style: AppTypography.sans(size: 9, color: AppColors.muted),
           ),
           const SizedBox(height: 5),
           Text(
@@ -863,7 +863,7 @@ abstract final class AppSheets {
                     Text(
                       product.category.toUpperCase(),
                       style: AppTypography.sans(
-                        size: 7,
+                        size: 9,
                         weight: FontWeight.w700,
                         color: AppColors.gold,
                         letterSpacing: .7,
@@ -1023,7 +1023,7 @@ abstract final class AppSheets {
                                     child: Text(
                                       order.status.toUpperCase(),
                                       style: AppTypography.sans(
-                                        size: 7,
+                                        size: 9,
                                         weight: FontWeight.w800,
                                         color: AppColors.successDark,
                                         letterSpacing: .42,
@@ -1123,7 +1123,7 @@ abstract final class AppSheets {
                                     child: Text(
                                       'DEFAULT',
                                       style: AppTypography.sans(
-                                        size: 6,
+                                        size: 8,
                                         weight: FontWeight.w800,
                                         color: AppColors.goldDark,
                                         letterSpacing: .48,
@@ -1136,7 +1136,7 @@ abstract final class AppSheets {
                             Text(
                               address.user,
                               style: AppTypography.sans(
-                                size: 9,
+                                size: 10,
                                 weight: FontWeight.w700,
                               ),
                             ),
@@ -1144,7 +1144,7 @@ abstract final class AppSheets {
                             Text(
                               address.lines,
                               style: AppTypography.sans(
-                                size: 8,
+                                size: 9,
                                 color: AppColors.muted,
                                 height: 1.45,
                               ),
@@ -1154,7 +1154,7 @@ abstract final class AppSheets {
                               Text(
                                 'SET AS DEFAULT',
                                 style: AppTypography.sans(
-                                  size: 7,
+                                  size: 10,
                                   weight: FontWeight.w800,
                                   color: AppColors.goldDark,
                                   letterSpacing: .56,
@@ -1246,7 +1246,7 @@ abstract final class AppSheets {
                               child: Text(
                                 'ACTIVE',
                                 style: AppTypography.sans(
-                                  size: 7,
+                                  size: 9,
                                   weight: FontWeight.w800,
                                   color: Colors.white,
                                   letterSpacing: .56,
@@ -1407,7 +1407,7 @@ abstract final class AppSheets {
         children: [
           Text(
             label,
-            style: AppTypography.sans(size: 7, color: AppColors.muted),
+            style: AppTypography.sans(size: 9, color: AppColors.muted),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1485,7 +1485,7 @@ abstract final class AppSheets {
                       ? '${scheme.dateLabel(payment.date)} · ${payment.receipt}'
                       : '${scheme.dateLabel(payment.date)} · ${scheme.money(payment.amount)}',
                   style: AppTypography.sans(
-                    size: 7,
+                    size: 9,
                     color: AppColors.muted,
                   ),
                 ),
@@ -1585,7 +1585,7 @@ abstract final class AppSheets {
                                             ? 'Flexible plan'
                                             : 'Maximum value',
                                     style: AppTypography.sans(
-                                      size: 7,
+                                      size: 9,
                                       color: AppColors.muted,
                                     ),
                                   ),

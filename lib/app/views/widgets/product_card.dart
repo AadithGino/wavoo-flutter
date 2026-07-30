@@ -39,22 +39,25 @@ class ProductCard extends StatelessWidget {
                     Positioned(
                       left: 4,
                       top: 4,
-                      child: DecoratedBox(
+                      child: Container(
+                        width: 55,
                         decoration: BoxDecoration(
                           color: AppColors.gold.withOpacity(0.92),
                           borderRadius: BorderRadius.circular(2),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          child: Text(
-                            product.tag.toUpperCase(),
-                            style: TextStyle(
-                              color: AppColors.ivory,
-                              fontSize: 5,
-                              fontWeight: FontWeight.w800,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            child: Text(
+                              product.tag.toUpperCase(),
+                              style: TextStyle(
+                                color: AppColors.ivory,
+                                fontSize: 6,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
@@ -69,7 +72,6 @@ class ProductCard extends StatelessWidget {
                           highlightColor: Colors.white,
                           splashColor: Colors.white,
                           focusColor: Colors.white,
-
                           visualDensity: VisualDensity.compact,
                           onPressed: () => shop.toggleWishlist(product.id),
                           icon: Icon(
@@ -94,7 +96,7 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10, height: 1.25),
+                      style: const TextStyle(fontSize: 11, height: 1.25),
                     ),
                     const SizedBox(height: 5),
                     Row(
@@ -112,7 +114,7 @@ class ProductCard extends StatelessWidget {
                           '₹${product.oldPrice}',
                           style: TextStyle(
                             color: AppColors.muted,
-                            fontSize: 8,
+                            fontSize: 9,
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),

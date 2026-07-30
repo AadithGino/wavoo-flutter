@@ -94,7 +94,7 @@ class _HomeViewState extends State<HomeView> {
                                 slide.$2,
                                 style: TextStyle(
                                   color: AppColors.goldDark,
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.3,
                                 ),
@@ -131,7 +131,7 @@ class _HomeViewState extends State<HomeView> {
                                   child: Text(
                                     'SHOP NOW',
                                     style: TextStyle(
-                                      fontSize: 9,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
@@ -159,9 +159,8 @@ class _HomeViewState extends State<HomeView> {
                       height: 6,
                       margin: const EdgeInsets.symmetric(horizontal: 2),
                       decoration: BoxDecoration(
-                        color: _slide == index
-                            ? AppColors.gold
-                            : Colors.white70,
+                        color:
+                            _slide == index ? AppColors.gold : Colors.white70,
                         borderRadius: BorderRadius.circular(5),
                       ),
                     ),
@@ -197,7 +196,7 @@ class _HomeViewState extends State<HomeView> {
                           'GOLD SCHEME',
                           style: TextStyle(
                             color: AppColors.gold,
-                            fontSize: 9,
+                            fontSize: 12,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.2,
                           ),
@@ -210,7 +209,10 @@ class _HomeViewState extends State<HomeView> {
                         const SizedBox(height: 7),
                         Text(
                           'Start your savings today',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(fontSize: 10),
                         ),
                       ],
                     ),
@@ -339,7 +341,7 @@ class _HomeViewState extends State<HomeView> {
                     'EXCLUSIVE FOR YOU',
                     style: TextStyle(
                       color: AppColors.goldSoft,
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -364,17 +366,19 @@ class _HomeViewState extends State<HomeView> {
     BuildContext context,
     String title,
     VoidCallback onTap,
-  ) => Padding(
-    padding: const EdgeInsets.only(top: 18, bottom: 10),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
+  ) =>
+      Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child:
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            ),
+            TextButton(onPressed: onTap, child: const Text('View All  ›')),
+          ],
         ),
-        TextButton(onPressed: onTap, child: const Text('View All  ›')),
-      ],
-    ),
-  );
+      );
 
   // IconData _categoryIcon(String value) => switch (value) {
   //   'Necklaces' => Icons.workspace_premium_outlined,
