@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -12,7 +13,7 @@ class PrimaryButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
   final bool expanded;
 
@@ -25,12 +26,10 @@ class PrimaryButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.gold,
         foregroundColor: Colors.white,
-        minimumSize: const Size(0, 47),
+        disabledBackgroundColor: AppColors.goldSoft,
+        minimumSize: const Size(48, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        textStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        textStyle: AppTypography.sans(size: 13, weight: FontWeight.w700),
       ),
     );
     return expanded ? SizedBox(width: double.infinity, child: button) : button;

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/product_card.dart';
 
@@ -21,7 +22,7 @@ class CatalogView extends StatelessWidget {
               subtitle: 'Fine jewellery for every moment',
               trailing: Text(
                 '${shop.filteredProducts.length} pieces',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -31,7 +32,7 @@ class CatalogView extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 35,
+              height: 44,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
@@ -44,16 +45,10 @@ class CatalogView extends StatelessWidget {
                   return GestureDetector(
                     onTap: () => shop.chooseCategory(category),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 0,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.gold
-                            : Colors
-                                  .transparent, // Adjust unselected color as needed
+                        color: selected ? AppColors.gold : Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: selected
@@ -65,9 +60,9 @@ class CatalogView extends StatelessWidget {
                         category,
                         style: TextStyle(
                           color: selected ? Colors.white : AppColors.ink,
-                          fontWeight: selected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          fontWeight:
+                              selected ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -76,20 +71,50 @@ class CatalogView extends StatelessWidget {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-            sliver: SliverGrid.builder(
-              itemCount: shop.filteredProducts.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.67,
+          if (shop.isLoading.value && shop.products.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (shop.filteredProducts.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    shop.loadError.value ?? 'No pieces in this collection yet.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.sans(size: 14, color: AppColors.muted),
+                  ),
+                ),
               ),
-              itemBuilder: (_, index) =>
-                  ProductCard(product: shop.filteredProducts[index]),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.crossAxisExtent;
+                  final crossAxisCount = width >= 700
+                      ? 3
+                      : width >= 480
+                          ? 2
+                          : 2;
+                  return SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.67,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (_, index) =>
+                          ProductCard(product: shop.filteredProducts[index]),
+                      childCount: shop.filteredProducts.length,
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );

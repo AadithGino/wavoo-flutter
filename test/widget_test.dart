@@ -1,29 +1,22 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wavoo_app/main.dart';
+import 'package:get/get.dart';
+import 'package:wavoo_app/app/core/utils/money.dart';
+import 'package:wavoo_app/app/core/utils/phone.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const WavooApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  tearDown(Get.reset);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  test('Money.fromPaise formats Indian rupees', () {
+    expect(Money.fromPaise(500000), '₹5,000');
+    expect(Money.fromPaise(null), '—');
+    expect(Money.fromPaise(-1), '—');
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('PhoneUtils normalizes Indian mobiles', () {
+    expect(PhoneUtils.normalizeIndian('9876543210'), '+919876543210');
+    expect(PhoneUtils.normalizeIndian('+91 98765 43210'), '+919876543210');
+    expect(PhoneUtils.normalizeIndian('12345'), isNull);
   });
 }

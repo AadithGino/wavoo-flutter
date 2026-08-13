@@ -1,0 +1,131 @@
+import 'package:uuid/uuid.dart';
+
+import '../../core/network/api_client.dart';
+import '../models/scheme.dart';
+
+class SchemeRepository {
+  SchemeRepository(this._client);
+
+  final ApiClient _client;
+  final _uuid = const Uuid();
+
+  Future<List<SchemeCatalogueItem>> fetchCatalogue() async {
+    final data = await _client.get<dynamic>('/customer/scheme-catalogue');
+    final list = data is List ? data : const [];
+    return list
+        .whereType<Map>()
+        .map((item) => SchemeCatalogueItem.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.templateId.isNotEmpty && item.versionId.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<SchemeEnrollment>> fetchEnrollments() async {
+    final data = await _client.get<dynamic>('/customer/scheme-enrollments');
+    final list = data is List ? data : const [];
+    final enrollments = <SchemeEnrollment>[];
+    for (final item in list.whereType<Map>()) {
+      var enrollment =
+          SchemeEnrollment.fromJson(Map<String, dynamic>.from(item));
+      if (enrollment.installments.isEmpty && enrollment.enrollmentId.isNotEmpty) {
+        try {
+          final cycles = await fetchInstallments(enrollment.enrollmentId);
+          enrollment = SchemeEnrollment(
+            enrollmentId: enrollment.enrollmentId,
+            enrollmentNumber: enrollment.enrollmentNumber,
+            passbookNumber: enrollment.passbookNumber,
+            status: enrollment.status,
+            joinedAt: enrollment.joinedAt,
+            planName: enrollment.planName,
+            amountPaise: enrollment.amountPaise,
+            totalInstallments: enrollment.totalInstallments > 0
+                ? enrollment.totalInstallments
+                : cycles.length,
+            paidInstallments: cycles.where((c) => c.isPaid).length,
+            templateId: enrollment.templateId,
+            versionId: enrollment.versionId,
+            slug: enrollment.slug,
+            nextDueDate: cycles
+                .where((c) => !c.isPaid)
+                .map((c) => c.dueDate)
+                .whereType<DateTime>()
+                .cast<DateTime?>()
+                .followedBy([null])
+                .first,
+            maturityDate: enrollment.maturityDate,
+            installments: cycles,
+          );
+        } catch (_) {}
+      }
+      enrollments.add(enrollment);
+    }
+    return enrollments;
+  }
+
+  Future<List<SchemeInstallment>> fetchInstallments(String enrollmentId) async {
+    final data = await _client.get<dynamic>(
+      '/customer/scheme-enrollments/$enrollmentId/installments',
+    );
+    final list = data is List
+        ? data
+        : (data is Map && data['items'] is List)
+            ? data['items'] as List
+            : const [];
+    return list
+        .whereType<Map>()
+        .map((item) => SchemeInstallment.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Future<SchemeEnrollment> enroll({
+    required String templateId,
+    required String versionId,
+    String? idempotencyKey,
+  }) async {
+    final data = await _client.post<Map<String, dynamic>>(
+      '/customer/scheme-enrollments',
+      body: {
+        'templateId': templateId,
+        'versionId': versionId,
+        'idempotencyKey': idempotencyKey ?? _uuid.v4(),
+      },
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return SchemeEnrollment.fromJson(data);
+  }
+
+  Future<PaymentPreview> paymentPreview(String enrollmentId) async {
+    final data = await _client.get<Map<String, dynamic>>(
+      '/customer/scheme-enrollments/$enrollmentId/payment-preview',
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return PaymentPreview.fromJson(data);
+  }
+
+  Future<PaymentIntent> initiatePhonePeWeb(
+    String enrollmentId, {
+    String? idempotencyKey,
+  }) async {
+    final data = await _client.post<Map<String, dynamic>>(
+      '/customer/scheme-enrollments/$enrollmentId/payments/phonepe',
+      body: {'idempotencyKey': idempotencyKey ?? _uuid.v4()},
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return PaymentIntent.fromJson(data);
+  }
+
+  Future<PaymentIntent> paymentIntentStatus(String merchantOrderId) async {
+    final data = await _client.get<Map<String, dynamic>>(
+      '/customer/scheme-payment-intents/$merchantOrderId',
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return PaymentIntent.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>?> fetchPassbook(String enrollmentId) async {
+    final data = await _client.get<dynamic>(
+      '/customer/scheme-enrollments/$enrollmentId/passbook',
+    );
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return null;
+  }
+}

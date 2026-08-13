@@ -1,8 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:wavoo_app/app/core/constants/app_colors.dart';
-import 'package:wavoo_app/app/views/app_shell_view.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/auth_controller.dart';
+import '../../controllers/home_controller.dart';
+import '../../controllers/scheme_controller.dart';
+import '../../controllers/shop_controller.dart';
+import '../../core/constants/app_colors.dart';
+import '../app_shell_view.dart';
+import 'login_view.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,45 +27,44 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
-    // Setup animation controller (1.5 seconds duration)
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     );
-
-    // Scale animation (Zoom in slightly)
-    _scaleAnimation = Tween<double>(
-      begin: 0.6,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-
-    // Fade animation (Fade in)
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
-
-    // Start the logo animation
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
     _controller.forward();
+    _bootstrap();
+  }
 
-    // Navigate to HomeScreen after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const AppShellView(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  // Smooth fade transition between screens
-                  return FadeTransition(opacity: animation, child: child);
-                },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
-      }
-    });
+  Future<void> _bootstrap() async {
+    final auth = Get.find<AuthController>();
+    final signedIn = await auth.bootstrap();
+    if (!mounted) return;
+
+    if (signedIn) {
+      unawaited(Get.find<ShopController>().loadProducts());
+      unawaited(Get.find<ShopController>().loadOrders());
+      unawaited(Get.find<SchemeController>().load());
+      unawaited(Get.find<HomeController>().load());
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) =>
+            signedIn ? const AppShellView() : const LoginView(),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+        transitionDuration: const Duration(milliseconds: 450),
+      ),
+    );
   }
 
   @override
@@ -70,17 +76,19 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream, // Custom background color
+      backgroundColor: AppColors.cream,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset("assets/images/logo.png"),
-              ],
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 160,
+              height: 160,
+              cacheWidth: 320,
+              cacheHeight: 320,
+              fit: BoxFit.contain,
             ),
           ),
         ),

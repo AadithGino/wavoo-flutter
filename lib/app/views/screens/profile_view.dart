@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
+import '../../controllers/auth_controller.dart';
+import '../../controllers/navigation_controller.dart';
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/phone.dart';
+import '../sheets/app_sheets.dart';
 import '../widgets/page_heading.dart';
-import '../widgets/sheets.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -14,6 +17,9 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shop = Get.find<ShopController>();
+    final auth = Get.find<AuthController>();
+    final nav = Get.find<NavigationController>();
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
@@ -21,67 +27,78 @@ class ProfileView extends StatelessWidget {
           title: 'My Wavoo',
           subtitle: 'Your jewellery, orders and privileges',
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Color(0xFFFBF2E5)],
+        Obx(() {
+          final profile = auth.profile.value;
+          final user = auth.user.value;
+          final name = profile?.displayName ??
+              ((user?.name.isNotEmpty ?? false) ? user!.name : 'Guest');
+          final initials = profile?.initials ?? user?.initials ?? 'W';
+          final phone = PhoneUtils.display(profile?.phone ?? user?.phone);
+          final kyc = profile?.kycStatus;
+
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color(0xFFFBF2E5)],
+              ),
+              border: Border.all(color: AppColors.line),
+              borderRadius: BorderRadius.circular(16),
             ),
-            border: Border.all(color: AppColors.line),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFCF9638), Color(0xFF9A5A04)],
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFCF9638), Color(0xFF9A5A04)],
+                    ),
+                    border: Border.all(color: const Color(0xFFF7E8CF), width: 5),
                   ),
-                  border: Border.all(color: const Color(0xFFF7E8CF), width: 5),
+                  child: Text(
+                    initials,
+                    style: AppTypography.serif(size: 26, color: Colors.white),
+                  ),
                 ),
-                child: Text(
-                  'AG',
-                  style: AppTypography.serif(size: 26, color: Colors.white),
+                const SizedBox(height: 12),
+                Text('Welcome, $name', style: AppTypography.serif(size: 22, height: 1)),
+                const SizedBox(height: 8),
+                Text(
+                  phone.isEmpty ? 'Gold Member' : phone,
+                  style: AppTypography.sans(size: 13, color: AppColors.muted),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Welcome, Aadith',
-                style: AppTypography.serif(size: 22, height: 1),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Gold Member',
-                style: AppTypography.sans(size: 10, color: AppColors.muted),
-              ),
-            ],
-          ),
-        ),
+                if (kyc != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'KYC: $kyc',
+                    style: AppTypography.sans(size: 12, color: AppColors.goldDark),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  'Saved addresses',
-                  style: AppTypography.serif(size: 18),
-                ),
+                child: Text('Saved addresses', style: AppTypography.serif(size: 18)),
               ),
               TextButton(
                 onPressed: AppSheets.showAddresses,
                 child: Text(
                   'Manage',
                   style: AppTypography.sans(
-                    size: 10,
+                    size: 12,
                     weight: FontWeight.w700,
                     color: AppColors.goldDark,
                   ),
@@ -91,7 +108,19 @@ class ProfileView extends StatelessWidget {
           ),
         ),
         Obx(() {
-          final address = shop.addresses.firstWhere((item) => item.isDefault);
+          final address = shop.defaultAddress;
+          if (address == null) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.line),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text('No default address yet.'),
+            );
+          }
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -100,179 +129,91 @@ class ProfileView extends StatelessWidget {
               border: Border.all(color: AppColors.line),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            address.label,
-                            style: AppTypography.sans(
-                              size: 10,
-                              weight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          address.isDefault
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.goldSoft.withOpacity(.3),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    "DEFAULT",
-                                    style: AppTypography.sans(
-                                      size: 8,
-                                      weight: FontWeight.w800,
-                                      color: AppColors.goldDark,
-                                      letterSpacing: .48,
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        address.user,
-                        style: AppTypography.sans(
-                          size: 10,
-                          weight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        address.lines,
-                        style: AppTypography.sans(
-                          size: 9,
-                          color: AppColors.muted,
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  address.label,
+                  style: AppTypography.sans(size: 13, weight: FontWeight.w800),
                 ),
+                const SizedBox(height: 6),
+                Text(address.lines, style: AppTypography.sans(size: 13, color: AppColors.muted)),
               ],
             ),
           );
         }),
-        const SizedBox(height: 14),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.line),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Column(
-            children: [
-              _ProfileItem(
-                svgAsset: 'assets/svg/orders.svg',
-                label: 'My Orders',
-                onTap: AppSheets.showOrders,
-              ),
-              Divider(color: AppColors.line),
-              _ProfileItem(
-                svgAsset: 'assets/svg/wishlist.svg',
-                label: 'Saved Jewellery',
-                onTap: AppSheets.showWishlist,
-              ),
-              Divider(color: AppColors.line),
-              _ProfileItem(
-                svgAsset: 'assets/svg/scheme.svg',
-                label: 'My Gold Scheme',
-                onTap: AppSheets.showSchemeDetails,
-              ),
-              Divider(color: AppColors.line),
-              _ProfileItem(
-                svgAsset: 'assets/svg/calendar.svg',
-                label: 'Appointments',
-                onTap: () => _message('Appointment request started'),
-              ),
-              Divider(color: AppColors.line),
-              _ProfileItem(
-                svgAsset: 'assets/svg/help.svg',
-                label: 'Help & Support',
-                onTap: () => _message('Wavoo support: +91 98765 43210'),
-              ),
-            ],
+        const SizedBox(height: 16),
+        _ProfileTile(
+          icon: 'assets/svg/orders.svg',
+          title: 'My Orders',
+          onTap: AppSheets.showOrders,
+          fallbackIcon: Icons.receipt_long_outlined,
+        ),
+        _ProfileTile(
+          icon: 'assets/svg/wishlist.svg',
+          title: 'Saved Jewellery',
+          onTap: AppSheets.showWishlist,
+          fallbackIcon: Icons.favorite_border,
+        ),
+        _ProfileTile(
+          icon: 'assets/svg/scheme.svg',
+          title: 'My Gold Scheme',
+          onTap: () => nav.changePage(2),
+          fallbackIcon: Icons.savings_outlined,
+        ),
+        _ProfileTile(
+          icon: 'assets/svg/help.svg',
+          title: 'Help & Support',
+          onTap: AppSheets.showContactWavoo,
+          fallbackIcon: Icons.help_outline,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: OutlinedButton(
+            onPressed: auth.logout,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              foregroundColor: Colors.red.shade700,
+            ),
+            child: const Text('Log out'),
           ),
         ),
       ],
     );
   }
-
-  void _message(String value) => Get.showSnackbar(
-        GetSnackBar(
-          duration: const Duration(seconds: 2),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.fromLTRB(20, 0, 20, 88),
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-          borderRadius: 20,
-          backgroundColor: const Color(0xFF211D18),
-          boxShadows: const [
-            BoxShadow(
-              color: Color(0x38000000),
-              blurRadius: 30,
-              offset: Offset(0, 8),
-            ),
-          ],
-          messageText: Text(
-            value,
-            textAlign: TextAlign.center,
-            style: AppTypography.sans(size: 10, color: Colors.white),
-          ),
-        ),
-      );
 }
 
-class _ProfileItem extends StatelessWidget {
-  const _ProfileItem({
-    required this.svgAsset,
-    required this.label,
+class _ProfileTile extends StatelessWidget {
+  const _ProfileTile({
+    required this.icon,
+    required this.title,
     required this.onTap,
+    this.fallbackIcon,
   });
-  final String svgAsset;
-  final String label;
+
+  final String icon;
+  final String title;
   final VoidCallback onTap;
+  final IconData? fallbackIcon;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          height: 49,
-          child: Row(
-            children: [
-              const SizedBox(width: 15),
-              SvgPicture.asset(
-                svgAsset,
-                width: 18,
-                height: 18,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.goldDark,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(label, style: AppTypography.sans(size: 11))),
-              SvgPicture.asset(
-                'assets/svg/chevron-right-svgrepo-com.svg',
-                width: 13,
-                height: 13,
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFFA49B90),
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 15),
-            ],
-          ),
-        ),
+  Widget build(BuildContext context) {
+    Widget leading;
+    try {
+      leading = SvgPicture.asset(
+        icon,
+        width: 22,
+        height: 22,
+        colorFilter: const ColorFilter.mode(AppColors.goldDark, BlendMode.srcIn),
       );
+    } catch (_) {
+      leading = Icon(fallbackIcon ?? Icons.circle_outlined, color: AppColors.goldDark);
+    }
+    return ListTile(
+      onTap: onTap,
+      leading: leading,
+      title: Text(title, style: AppTypography.sans(size: 14, weight: FontWeight.w600)),
+      trailing: const Icon(Icons.chevron_right),
+    );
+  }
 }

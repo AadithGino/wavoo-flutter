@@ -27,10 +27,19 @@ abstract final class AppTheme {
       dividerColor: AppColors.line,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.cream,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.gold, width: 1.6),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -39,7 +48,7 @@ abstract final class AppTheme {
         indicatorColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => AppTypography.sans(
-            size: 9,
+            size: 11,
             weight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
                 : FontWeight.w400,
@@ -53,7 +62,7 @@ abstract final class AppTheme {
         backgroundColor: Colors.white,
         selectedColor: AppColors.gold,
         side: const BorderSide(color: AppColors.line),
-        labelStyle: AppTypography.sans(size: 9, color: const Color(0xFF5D554B)),
+        labelStyle: AppTypography.sans(size: 12, color: const Color(0xFF5D554B)),
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
@@ -61,7 +70,8 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.gold,
           foregroundColor: Colors.white,
-          textStyle: AppTypography.sans(size: 8, weight: FontWeight.w700),
+          minimumSize: const Size(48, 48),
+          textStyle: AppTypography.sans(size: 13, weight: FontWeight.w700),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
