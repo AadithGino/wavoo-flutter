@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_image.dart';
 import '../widgets/scheme_progress_card.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/shimmers.dart';
 
 class HomeView extends StatefulWidget {
@@ -342,6 +343,26 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
             ],
+          );
+        }),
+        Obx(() {
+          if (shop.isLoading.value) return const SizedBox.shrink();
+          if (shop.products.isNotEmpty ||
+              shop.categoryTiles.isNotEmpty ||
+              shop.newArrivals.isNotEmpty ||
+              shop.bestSellers.isNotEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: EmptyState(
+              compact: true,
+              title: 'No collections yet',
+              message:
+                  'New arrivals and curated jewellery will appear here as soon as they are added.',
+              actionLabel: 'REFRESH',
+              onAction: shop.loadCatalog,
+            ),
           );
         }),
         const SizedBox(height: 17),

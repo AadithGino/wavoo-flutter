@@ -1,11 +1,11 @@
 {
-    "name": "wavoo_app",
-    "short_name": "wavoo_app",
+    "name": "Wavoo Jewellers",
+    "short_name": "Wavoo",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FBF4E8",
+    "theme_color": "#B97911",
+    "description": "Wavoo Jewellers",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
