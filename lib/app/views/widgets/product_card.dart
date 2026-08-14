@@ -3,10 +3,9 @@ import 'package:get/get.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/money.dart';
 import '../../data/models/product.dart';
-import '../sheets/app_sheets.dart';
 import 'product_image.dart';
+import 'sheets.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({required this.product, this.width, super.key});
@@ -42,7 +41,7 @@ class ProductCard extends StatelessWidget {
                       left: 4,
                       top: 4,
                       child: Container(
-                        constraints: const BoxConstraints(minWidth: 55),
+                        width: 55,
                         decoration: BoxDecoration(
                           color: AppColors.gold.withOpacity(0.92),
                           borderRadius: BorderRadius.circular(2),
@@ -55,9 +54,9 @@ class ProductCard extends StatelessWidget {
                             ),
                             child: Text(
                               product.tag.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.ivory,
-                                fontSize: 11,
+                                fontSize: 6,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -71,11 +70,10 @@ class ProductCard extends StatelessWidget {
                       child: Obx(
                         () => IconButton.filledTonal(
                           color: Colors.white,
+                          highlightColor: Colors.white,
+                          splashColor: Colors.white,
+                          focusColor: Colors.white,
                           visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
                           onPressed: () => shop.toggleWishlist(product.id),
                           icon: Icon(
                             shop.wishlist.contains(product.id)
@@ -99,26 +97,26 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, height: 1.25),
+                      style: const TextStyle(fontSize: 11, height: 1.25),
                     ),
                     const SizedBox(height: 5),
                     Row(
                       children: [
                         Text(
-                          Money.fromPaise(product.pricePaise),
-                          style: const TextStyle(
+                          '₹${product.price}',
+                          style: TextStyle(
                             color: AppColors.goldDark,
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (product.oldPricePaise != null) ...[
+                        if (product.oldPrice > product.price) ...[
                           const SizedBox(width: 6),
                           Text(
-                            Money.fromPaise(product.oldPricePaise),
-                            style: const TextStyle(
+                            '₹${product.oldPrice}',
+                            style: TextStyle(
                               color: AppColors.muted,
-                              fontSize: 11,
+                              fontSize: 9,
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),

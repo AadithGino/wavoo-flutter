@@ -6,6 +6,7 @@ import '../controllers/navigation_controller.dart';
 import '../controllers/scheme_controller.dart';
 import '../controllers/shop_controller.dart';
 import '../core/network/api_client.dart';
+import '../data/local/local_shop_store.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/catalog_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -32,6 +33,7 @@ class InitialBinding extends Bindings {
     Get.put(profileRepo, permanent: true);
     Get.put(catalogRepo, permanent: true);
     Get.put(schemeRepo, permanent: true);
+    Get.put(LocalShopStore(), permanent: true);
 
     Get.put(
       AuthController(
@@ -42,7 +44,13 @@ class InitialBinding extends Bindings {
     );
     Get.put(NavigationController(), permanent: true);
     Get.put(HomeController(repository: profileRepo), permanent: true);
-    Get.put(ShopController(repository: catalogRepo), permanent: true);
+    Get.put(
+      ShopController(
+        repository: catalogRepo,
+        store: Get.find<LocalShopStore>(),
+      ),
+      permanent: true,
+    );
     Get.put(SchemeController(repository: schemeRepo), permanent: true);
   }
 }

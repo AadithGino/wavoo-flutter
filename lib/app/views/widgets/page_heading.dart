@@ -33,8 +33,7 @@ class PageHeading extends StatelessWidget {
                   subtitle,
                   style: const TextStyle(
                     color: AppColors.muted,
-                    fontSize: 13,
-                    height: 1.4,
+                    fontSize: 10,
                   ),
                 ),
               ],

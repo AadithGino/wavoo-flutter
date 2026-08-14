@@ -322,3 +322,80 @@ class PaymentIntent {
         sequenceNumber: (json['sequenceNumber'] as num?)?.toInt(),
       );
 }
+
+class RedemptionEligibility {
+  const RedemptionEligibility({
+    required this.enrollmentId,
+    required this.canRequest,
+    required this.hasOpenRedemption,
+    required this.totalRedeemablePaise,
+    required this.allowPartial,
+    this.blockingReason,
+    this.settlementMode,
+  });
+
+  final String enrollmentId;
+  final bool canRequest;
+  final bool hasOpenRedemption;
+  final int totalRedeemablePaise;
+  final bool allowPartial;
+  final String? blockingReason;
+  final String? settlementMode;
+
+  factory RedemptionEligibility.fromJson(Map<String, dynamic> json) =>
+      RedemptionEligibility(
+        enrollmentId: json['enrollmentId']?.toString() ?? '',
+        canRequest: json['canRequestRedemption'] == true,
+        hasOpenRedemption: json['hasOpenRedemption'] == true,
+        totalRedeemablePaise:
+            (json['totalRedeemablePaise'] as num?)?.toInt() ?? 0,
+        allowPartial: json['allowPartial'] == true,
+        blockingReason: json['blockingReason'] as String?,
+        settlementMode: json['settlementMode'] as String?,
+      );
+}
+
+class SchemeRedemption {
+  const SchemeRedemption({
+    required this.redemptionId,
+    required this.redemptionNumber,
+    required this.status,
+    required this.mode,
+    required this.requestedAmountPaise,
+    this.requestedAt,
+  });
+
+  final String redemptionId;
+  final String redemptionNumber;
+  final String status;
+  final String mode;
+  final int requestedAmountPaise;
+  final DateTime? requestedAt;
+
+  bool get isOpen {
+    const open = {
+      'REQUESTED',
+      'UNDER_REVIEW',
+      'APPROVED',
+      'READY_FOR_REDEMPTION',
+    };
+    return open.contains(status.toUpperCase());
+  }
+
+  factory SchemeRedemption.fromJson(Map<String, dynamic> json) {
+    final nested = json['redemption'];
+    final map = nested is Map
+        ? Map<String, dynamic>.from(nested)
+        : json;
+    return SchemeRedemption(
+      redemptionId: map['redemptionId']?.toString() ?? map['id']?.toString() ?? '',
+      redemptionNumber: map['redemptionNumber']?.toString() ?? '',
+      status: map['status']?.toString() ?? 'REQUESTED',
+      mode: map['mode']?.toString() ?? 'FULL',
+      requestedAmountPaise: (map['requestedAmountPaise'] as num?)?.toInt() ?? 0,
+      requestedAt: map['requestedAt'] is String
+          ? DateTime.tryParse(map['requestedAt'] as String)
+          : null,
+    );
+  }
+}

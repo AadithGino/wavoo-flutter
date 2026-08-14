@@ -128,4 +128,47 @@ class SchemeRepository {
     if (data is Map) return Map<String, dynamic>.from(data);
     return null;
   }
+
+  Future<RedemptionEligibility> redemptionEligibility(String enrollmentId) async {
+    final data = await _client.get<Map<String, dynamic>>(
+      '/customer/scheme-enrollments/$enrollmentId/redemption-eligibility',
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return RedemptionEligibility.fromJson(data);
+  }
+
+  Future<SchemeRedemption> requestRedemption({
+    required String enrollmentId,
+    String mode = 'FULL',
+    int? amountPaise,
+    String? idempotencyKey,
+  }) async {
+    final data = await _client.post<Map<String, dynamic>>(
+      '/customer/scheme-redemptions',
+      body: {
+        'enrollmentId': enrollmentId,
+        'mode': mode,
+        if (mode == 'PARTIAL' && amountPaise != null) 'amountPaise': amountPaise,
+        'idempotencyKey': idempotencyKey ?? _uuid.v4(),
+      },
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return SchemeRedemption.fromJson(data);
+  }
+
+  Future<List<SchemeRedemption>> fetchRedemptions(String enrollmentId) async {
+    final data = await _client.get<dynamic>(
+      '/customer/scheme-redemptions',
+      query: {'enrollmentId': enrollmentId},
+    );
+    final list = data is List
+        ? data
+        : (data is Map && data['items'] is List)
+            ? data['items'] as List
+            : const [];
+    return list
+        .whereType<Map>()
+        .map((item) => SchemeRedemption.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
 }

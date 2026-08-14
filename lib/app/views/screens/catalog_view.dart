@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/product_card.dart';
+import '../widgets/shimmers.dart';
 
 class CatalogView extends StatelessWidget {
   const CatalogView({super.key});
@@ -22,7 +22,7 @@ class CatalogView extends StatelessWidget {
               subtitle: 'Fine jewellery for every moment',
               trailing: Text(
                 '${shop.filteredProducts.length} pieces',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -31,24 +31,33 @@ class CatalogView extends StatelessWidget {
             ),
           ),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 44,
+            child: shop.isLoading.value && shop.categoryTiles.isEmpty
+                ? const CatalogChipShimmer()
+                : SizedBox(
+              height: 35,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
-                itemCount: shop.categories.length,
+                itemCount: shop.categoryFilterChips.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, index) {
-                  final category = shop.categories[index];
-                  final selected = shop.selectedCategory.value == category;
+                  final category = shop.categoryFilterChips[index];
+                  final selected =
+                      shop.selectedCategoryId.value == category.id;
 
                   return GestureDetector(
-                    onTap: () => shop.chooseCategory(category),
+                    onTap: () => shop.chooseCategory(category.id),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 0,
+                      ),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.gold : Colors.transparent,
+                        color: selected
+                            ? AppColors.gold
+                            : Colors
+                                  .transparent, // Adjust unselected color as needed
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: selected
@@ -57,12 +66,12 @@ class CatalogView extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        category,
+                        category.name,
                         style: TextStyle(
                           color: selected ? Colors.white : AppColors.ink,
-                          fontWeight:
-                              selected ? FontWeight.bold : FontWeight.w500,
-                          fontSize: 13,
+                          fontWeight: selected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -71,50 +80,23 @@ class CatalogView extends StatelessWidget {
               ),
             ),
           ),
-          if (shop.isLoading.value && shop.products.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (shop.filteredProducts.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    shop.loadError.value ?? 'No pieces in this collection yet.',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.sans(size: 14, color: AppColors.muted),
-                  ),
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-              sliver: SliverLayoutBuilder(
-                builder: (context, constraints) {
-                  final width = constraints.crossAxisExtent;
-                  final crossAxisCount = width >= 700
-                      ? 3
-                      : width >= 480
-                          ? 2
-                          : 2;
-                  return SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
+          shop.isLoading.value && shop.products.isEmpty
+              ? const SliverToBoxAdapter(child: ProductGridShimmer())
+              : SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+            sliver: SliverGrid.builder(
+                    itemCount: shop.filteredProducts.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.67,
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (_, index) =>
-                          ProductCard(product: shop.filteredProducts[index]),
-                      childCount: shop.filteredProducts.length,
-                    ),
-                  );
-                },
-              ),
-            ),
+                    itemBuilder: (_, index) =>
+                        ProductCard(product: shop.filteredProducts[index]),
+                  ),
+          ),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'address.dart';
+
 class AppUser {
   const AppUser({
     required this.id,
@@ -85,6 +87,8 @@ class CustomerProfile {
     this.kycStatus,
     this.hasKycSubmission = false,
     this.address,
+    this.defaultAddress,
+    this.addresses = const [],
   });
 
   final String id;
@@ -95,19 +99,63 @@ class CustomerProfile {
   final String? kycStatus;
   final bool hasKycSubmission;
   final Map<String, dynamic>? address;
+  final Address? defaultAddress;
+  final List<Address> addresses;
 
-  factory CustomerProfile.fromJson(Map<String, dynamic> json) => CustomerProfile(
-        id: json['id']?.toString() ?? '',
-        name: json['name'] as String?,
-        phone: json['phone'] as String?,
-        passbookNumber: json['passbookNumber'] as String?,
-        status: json['status'] as String?,
-        kycStatus: json['kycStatus'] as String?,
-        hasKycSubmission: json['hasKycSubmission'] == true,
-        address: json['address'] is Map
-            ? Map<String, dynamic>.from(json['address'] as Map)
-            : null,
-      );
+  factory CustomerProfile.fromJson(Map<String, dynamic> json) {
+    Address? parseAddress(dynamic raw) {
+      if (raw is Map) return Address.fromJson(Map<String, dynamic>.from(raw));
+      return null;
+    }
+
+    final list = <Address>[];
+    final rawList = json['addresses'];
+    if (rawList is List) {
+      for (final item in rawList) {
+        final address = parseAddress(item);
+        if (address != null &&
+            (address.line1.isNotEmpty || address.city.isNotEmpty)) {
+          list.add(address);
+        }
+      }
+    }
+
+    return CustomerProfile(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String?,
+      phone: json['phone'] as String?,
+      passbookNumber: json['passbookNumber'] as String?,
+      status: json['status'] as String?,
+      kycStatus: json['kycStatus'] as String?,
+      hasKycSubmission: json['hasKycSubmission'] == true,
+      address: json['address'] is Map
+          ? Map<String, dynamic>.from(json['address'] as Map)
+          : null,
+      defaultAddress: parseAddress(json['defaultAddress']),
+      addresses: list,
+    );
+  }
+
+  List<Address> get savedAddresses {
+    if (addresses.isNotEmpty) return addresses;
+    if (defaultAddress != null) return [defaultAddress!];
+    final legacy = address;
+    if (legacy == null) return const [];
+    final parsed = Address.fromJson({
+      'id': 'profile',
+      'label': 'Profile',
+      'name': displayName,
+      'phone': phone ?? '',
+      ...legacy,
+      'stateName': legacy['stateName'] ?? legacy['state'],
+      'pincode': legacy['pincode'] ?? legacy['postalCode'],
+      'isDefault': true,
+    });
+    if (parsed.line1.isEmpty && parsed.city.isEmpty && parsed.pincode.isEmpty) {
+      return const [];
+    }
+    return [parsed];
+  }
 
   String get displayName => (name ?? '').trim().isEmpty ? 'Guest' : name!.trim();
 

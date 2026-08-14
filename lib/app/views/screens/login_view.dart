@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/phone.dart';
+import '../widgets/primary_button.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -241,42 +242,22 @@ class _LoginViewState extends State<LoginView> {
                 ),
               ],
               const SizedBox(height: 24),
-              SizedBox(
-                height: 52,
-                child: FilledButton(
-                  onPressed: auth.isLoading.value
-                      ? null
-                      : () async {
-                          if (step == 0) {
-                            await auth.requestOtp(_phoneController.text);
-                          } else if (step == 1) {
-                            await auth.verifyOtp(_otpController.text);
-                          } else {
-                            await auth.register(_nameController.text);
-                          }
-                        },
-                  child: auth.isLoading.value
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          step == 0
-                              ? 'CONTINUE'
-                              : step == 1
-                                  ? 'VERIFY OTP'
-                                  : 'CREATE ACCOUNT',
-                          style: AppTypography.sans(
-                            size: 14,
-                            weight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
+              PrimaryButton(
+                label: step == 0
+                    ? 'CONTINUE'
+                    : step == 1
+                        ? 'VERIFY OTP'
+                        : 'CREATE ACCOUNT',
+                loading: auth.isLoading.value,
+                onPressed: () {
+                  if (step == 0) {
+                    auth.requestOtp(_phoneController.text);
+                  } else if (step == 1) {
+                    auth.verifyOtp(_otpController.text);
+                  } else {
+                    auth.register(_nameController.text);
+                  }
+                },
               ),
               if (step > 0)
                 TextButton(

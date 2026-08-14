@@ -11,7 +11,7 @@ import 'screens/home_view.dart';
 import 'screens/offers_view.dart';
 import 'screens/profile_view.dart';
 import 'screens/schemes_view.dart';
-import 'sheets/app_sheets.dart';
+import 'widgets/sheets.dart';
 
 class AppShellView extends GetView<NavigationController> {
   const AppShellView({super.key});
@@ -48,8 +48,6 @@ class AppShellView extends GetView<NavigationController> {
           'assets/images/logo.png',
           width: 96,
           height: 88,
-          cacheWidth: 192,
-          cacheHeight: 176,
           fit: BoxFit.contain,
         ),
         actions: [
@@ -284,7 +282,7 @@ class _AppDrawer extends StatelessWidget {
                     Text(
                       'Book a one-to-one consultation with our experts.',
                       style: AppTypography.sans(
-                        size: 12,
+                        size: 9,
                         color: Colors.white.withOpacity(.82),
                       ),
                     ),
@@ -363,7 +361,7 @@ class _DrawerLink extends StatelessWidget {
                   ),
                   child: Text(
                     '$badge',
-                    style: AppTypography.sans(size: 11, color: Colors.white),
+                    style: AppTypography.sans(size: 9, color: Colors.white),
                   ),
                 )
               else

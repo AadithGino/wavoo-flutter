@@ -19,6 +19,7 @@ class OffersView extends StatelessWidget {
           subtitle: 'Curated privileges for you',
         ),
         _OfferTile(
+          height: 168,
           image: 'assets/images/design_08.webp',
           tag: '✦ FESTIVE SEASON',
           title: 'Festive Gold Edit',
@@ -28,6 +29,7 @@ class OffersView extends StatelessWidget {
           onTap: () => Get.find<NavigationController>().changePage(1),
         ),
         _OfferTile(
+          height: 170,
           tag: '✦ BY APPOINTMENT',
           title: 'Bridal Privilege',
           text:
@@ -39,6 +41,7 @@ class OffersView extends StatelessWidget {
           dark: false,
         ),
         _OfferTile(
+          height: 160,
           tag: '✦ MEMBERS ONLY',
           title: 'Golden Rewards',
           text: 'Earn double points every time you shop with Wavoo Jewellers.',
@@ -69,22 +72,23 @@ class _OfferTile extends StatelessWidget {
     required this.button,
     required this.onTap,
     this.image,
+    this.height = 190,
     this.color = AppColors.goldDark,
     this.dark = true,
   });
-
   final String tag;
   final String title;
   final String text;
   final String button;
   final VoidCallback onTap;
   final String? image;
+  final double height;
   final Color color;
   final bool dark;
 
   @override
   Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minHeight: 168),
+        height: height,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         decoration: BoxDecoration(
           color: color,
@@ -109,18 +113,17 @@ class _OfferTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 tag,
                 style: TextStyle(
                   color: dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
-                  fontSize: 11,
+                  fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.1,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 7),
               Text(
                 title,
                 style: AppTypography.serif(
@@ -130,13 +133,16 @@ class _OfferTile extends StatelessWidget {
                   letterSpacing: -.48,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                text,
-                style: TextStyle(
-                  color: dark ? Colors.white70 : AppColors.muted,
-                  fontSize: 13,
-                  height: 1.45,
+              const SizedBox(height: 7),
+              SizedBox(
+                width: 270,
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: dark ? Colors.white70 : AppColors.muted,
+                    fontSize: 9,
+                    height: 1.5,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -145,18 +151,13 @@ class _OfferTile extends StatelessWidget {
                 style: TextButton.styleFrom(
                   foregroundColor:
                       dark ? const Color(0xFFFFE5A8) : AppColors.goldDark,
-                  minimumSize: const Size(48, 44),
                   padding: EdgeInsets.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 label: Text(
                   button,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
                 ),
-                icon: const Icon(Icons.arrow_forward, size: 18),
+                icon: const Icon(Icons.arrow_forward, size: 17),
               ),
             ],
           ),

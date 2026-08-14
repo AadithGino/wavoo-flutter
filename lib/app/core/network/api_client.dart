@@ -104,6 +104,30 @@ class ApiClient {
   }) =>
       _request('POST', path, body: body, query: query, parser: parser);
 
+  Future<T> patch<T>(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? query,
+    T Function(dynamic data)? parser,
+  }) =>
+      _request('PATCH', path, body: body, query: query, parser: parser);
+
+  Future<T> put<T>(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? query,
+    T Function(dynamic data)? parser,
+  }) =>
+      _request('PUT', path, body: body, query: query, parser: parser);
+
+  Future<T> delete<T>(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? query,
+    T Function(dynamic data)? parser,
+  }) =>
+      _request('DELETE', path, body: body, query: query, parser: parser);
+
   Future<T> _request<T>(
     String method,
     String path, {

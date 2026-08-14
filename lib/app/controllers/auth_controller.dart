@@ -51,10 +51,12 @@ class AuthController extends GetxController {
       final session = await _auth.currentSession();
       if (session == null) {
         isAuthenticated.value = false;
+        await _clearShopSession();
         return false;
       }
       user.value = session;
       isAuthenticated.value = true;
+      await _restoreShopBag();
       await refreshProfile();
       return true;
     } catch (_) {
@@ -77,7 +79,9 @@ class AuthController extends GetxController {
         );
       }
       if (p != null && Get.isRegistered<ShopController>()) {
-        Get.find<ShopController>().applyProfileAddress(p);
+        final shop = Get.find<ShopController>();
+        shop.applyProfileAddress(p);
+        unawaited(shop.loadAddresses());
       }
     } catch (_) {
       // Profile may fail if customer record missing; keep session.
@@ -220,6 +224,12 @@ class AuthController extends GetxController {
     registrationToken.value = '';
     resendSecondsLeft.value = 0;
     _resendTimer?.cancel();
+    if (Get.isRegistered<ShopController>()) {
+      await Get.find<ShopController>().reset();
+    }
+    if (Get.isRegistered<SchemeController>()) {
+      Get.find<SchemeController>().reset();
+    }
     Get.offAll(() => const LoginView());
   }
 
@@ -227,6 +237,7 @@ class AuthController extends GetxController {
     user.value = null;
     profile.value = null;
     isAuthenticated.value = false;
+    unawaited(_clearShopSession());
     if (Get.currentRoute.contains('Login')) return;
     Get.offAll(() => const LoginView());
     Get.showSnackbar(
@@ -261,13 +272,30 @@ class AuthController extends GetxController {
     });
   }
 
+  Future<void> _restoreShopBag() async {
+    if (!Get.isRegistered<ShopController>()) return;
+    await Get.find<ShopController>().restoreBag();
+  }
+
+  Future<void> _clearShopSession() async {
+    if (!Get.isRegistered<ShopController>()) return;
+    await Get.find<ShopController>().reset();
+  }
+
   void _goHome() {
-    unawaited(Get.find<ShopController>().loadProducts());
-    unawaited(Get.find<ShopController>().loadOrders());
+    unawaited(_openSignedInShop());
     unawaited(Get.find<SchemeController>().load());
     if (Get.isRegistered<HomeController>()) {
       unawaited(Get.find<HomeController>().load());
     }
     Get.offAll(() => const AppShellView());
+  }
+
+  Future<void> _openSignedInShop() async {
+    final shop = Get.find<ShopController>();
+    await shop.restoreBag();
+    unawaited(shop.loadCatalog());
+    unawaited(shop.loadOrders());
+    unawaited(shop.loadAddresses());
   }
 }

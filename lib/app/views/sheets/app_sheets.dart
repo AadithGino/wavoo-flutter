@@ -11,6 +11,8 @@ abstract final class AppSheets {
   static void showCheckout() => showCheckoutSheet();
   static void showOrders() => showOrdersSheet();
   static void showAddresses() => showAddressesSheet();
+  static void showAddressForm({bool asNew = true}) =>
+      showAddressFormSheet(asNew: asNew);
   static void showSchemeDetails() => showSchemeDetailsSheet();
   static void showSchemeEnrollment() => showSchemeEnrollmentSheet();
   static void showSchemePayment() => showSchemePaymentSheet();

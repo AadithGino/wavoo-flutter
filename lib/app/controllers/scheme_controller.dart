@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,12 +9,28 @@ import '../core/utils/money.dart';
 import '../data/models/scheme.dart';
 import '../data/repositories/scheme_repository.dart';
 
+class SchemePayment {
+  const SchemePayment({
+    required this.installment,
+    required this.date,
+    required this.amount,
+    this.receipt,
+    this.isNext = false,
+  });
+
+  final int installment;
+  final DateTime date;
+  final int amount;
+  final String? receipt;
+  final bool isNext;
+}
+
 class SchemeController extends GetxController {
   SchemeController({required SchemeRepository repository}) : _repository = repository;
 
   final SchemeRepository _repository;
 
-  final isLoading = false.obs;
+  final isLoading = true.obs;
   final loadError = RxnString();
   final catalogue = <SchemeCatalogueItem>[].obs;
   final enrollments = <SchemeEnrollment>[].obs;
@@ -23,6 +41,16 @@ class SchemeController extends GetxController {
   final isRedeemed = false.obs;
   final redemptionMethod = ''.obs;
   final redemptionReference = ''.obs;
+  final redemptionBusy = false.obs;
+  final eligibility = Rxn<RedemptionEligibility>();
+  final lastRedemption = Rxn<SchemeRedemption>();
+
+  /// f2501df sheet / screen contract — kept in sync from API enrollments.
+  final monthlyAmount = 5000.obs;
+  final paidInstallments = 0.obs;
+  final hasJoined = false.obs;
+  final selectedPlanMonths = 11.obs;
+  final payments = <SchemePayment>[].obs;
 
   SchemeEnrollment? get activeEnrollment {
     for (final item in enrollments) {
@@ -31,7 +59,53 @@ class SchemeController extends GetxController {
     return enrollments.isEmpty ? null : enrollments.first;
   }
 
-  bool get hasJoined => enrollments.isNotEmpty;
+  String get planName =>
+      activeEnrollment?.planName ??
+      selectedCatalogueItem.value?.name ??
+      'Wavoo Gold Savings Plan';
+
+  int get totalInstallments {
+    final enrolled = activeEnrollment?.totalInstallments ?? 0;
+    if (enrolled > 0) return enrolled;
+    return selectedPlanMonths.value;
+  }
+
+  DateTime get startDate =>
+      activeEnrollment?.joinedAt ?? DateTime.now();
+
+  DateTime get maturityDate =>
+      activeEnrollment?.maturityDate ??
+      DateTime(startDate.year, startDate.month + totalInstallments, startDate.day);
+
+  DateTime get nextDueDate =>
+      activeEnrollment?.nextDueDate ??
+      DateTime(startDate.year, startDate.month + paidInstallments.value + 1, startDate.day);
+
+  int get savedAmount => monthlyAmount.value * paidInstallments.value;
+  int get goalAmount => monthlyAmount.value * totalInstallments;
+  int get remainingInstallments =>
+      (totalInstallments - paidInstallments.value).clamp(0, totalInstallments).toInt();
+  double get progress => totalInstallments <= 0
+      ? 0
+      : (paidInstallments.value / totalInstallments).clamp(0, 1).toDouble();
+  int get progressPercent => (progress * 100).round();
+  bool get matured =>
+      paidInstallments.value >= totalInstallments ||
+      (activeEnrollment?.isMatured ?? false);
+
+  List<SchemePayment> get upcomingPayments => List.generate(
+        remainingInstallments,
+        (index) => SchemePayment(
+          installment: paidInstallments.value + index + 1,
+          date: DateTime(
+            nextDueDate.year,
+            nextDueDate.month + index,
+            nextDueDate.day,
+          ),
+          amount: monthlyAmount.value,
+          isNext: index == 0,
+        ),
+      );
 
   String money(int rupees) => Money.formatRupees(rupees);
   String moneyPaise(int paise) => Money.fromPaise(paise);
@@ -43,6 +117,25 @@ class SchemeController extends GetxController {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  void choosePlan(int months) {
+    selectedPlanMonths.value = months;
+    _matchCatalogueSelection();
+  }
+
+  void chooseAmount(int amount) {
+    monthlyAmount.value = amount;
+    _matchCatalogueSelection();
+  }
+
+  void joinScheme() {
+    unawaited(_joinScheme());
+  }
+
+  void redeem([String method = 'Showroom redemption']) {
+    redemptionMethod.value = method;
+    unawaited(requestRedemption());
   }
 
   Future<void> load() async {
@@ -58,6 +151,11 @@ class SchemeController extends GetxController {
       if (selectedCatalogueItem.value == null && catalogue.isNotEmpty) {
         selectedCatalogueItem.value = catalogue.first;
       }
+      final enrollment = activeEnrollment;
+      if (enrollment != null) {
+        await _refreshRedemption(enrollment.enrollmentId);
+      }
+      _syncUiFromApi();
     } on ApiException catch (e) {
       loadError.value = e.message;
     } catch (e) {
@@ -69,6 +167,69 @@ class SchemeController extends GetxController {
 
   void selectCatalogueItem(SchemeCatalogueItem item) {
     selectedCatalogueItem.value = item;
+  }
+
+  Future<void> _joinScheme() async {
+    _matchCatalogueSelection();
+    await joinSelectedScheme();
+  }
+
+  void _matchCatalogueSelection() {
+    for (final item in catalogue) {
+      if (item.totalInstallments == selectedPlanMonths.value &&
+          item.amountRupees == monthlyAmount.value) {
+        selectedCatalogueItem.value = item;
+        return;
+      }
+    }
+    for (final item in catalogue) {
+      if (item.totalInstallments == selectedPlanMonths.value) {
+        selectedCatalogueItem.value = item;
+        return;
+      }
+    }
+    if (selectedCatalogueItem.value == null && catalogue.isNotEmpty) {
+      selectedCatalogueItem.value = catalogue.first;
+    }
+  }
+
+  void _syncUiFromApi() {
+    hasJoined.value = enrollments.isNotEmpty;
+    final enrollment = activeEnrollment;
+    if (enrollment == null) {
+      paidInstallments.value = 0;
+      payments.clear();
+      final item = selectedCatalogueItem.value;
+      if (item != null && item.amountPaise > 0) {
+        monthlyAmount.value = item.amountRupees;
+        if (item.totalInstallments > 0) {
+          selectedPlanMonths.value = item.totalInstallments;
+        }
+      }
+      return;
+    }
+    monthlyAmount.value = enrollment.amountPaise > 0
+        ? enrollment.amountPaise ~/ 100
+        : monthlyAmount.value;
+    paidInstallments.value = enrollment.paidInstallments;
+    if (enrollment.totalInstallments > 0) {
+      selectedPlanMonths.value = enrollment.totalInstallments;
+    }
+    isRedeemed.value = enrollment.isRedeemed || isRedeemed.value;
+    final paid = enrollment.installments.where((item) => item.isPaid).toList()
+      ..sort((a, b) => b.sequenceNumber.compareTo(a.sequenceNumber));
+    payments.assignAll(
+      paid.map(
+        (item) => SchemePayment(
+          installment: item.sequenceNumber,
+          date: item.paidAt ?? item.dueDate ?? DateTime.now(),
+          amount: item.amountPaise > 0
+              ? item.amountPaise ~/ 100
+              : monthlyAmount.value,
+          receipt: item.receiptNumber,
+        ),
+      ),
+    );
   }
 
   Future<bool> joinSelectedScheme() async {
@@ -110,6 +271,8 @@ class SchemeController extends GetxController {
 
   /// Starts PhonePe web checkout and polls until terminal status.
   /// Never reports success until backend status is SUCCESS.
+  /// Signature matches the f2501df sheet (`void` tear-off is not required;
+  /// the sheet invokes this inside a closure).
   Future<PaymentIntent?> payInstallment() async {
     final enrollment = activeEnrollment;
     if (enrollment == null) {
@@ -137,6 +300,10 @@ class SchemeController extends GetxController {
       paymentStatus.value = 'Opening PhonePe…';
       final intent = await _repository.initiatePhonePeWeb(enrollment.enrollmentId);
       lastIntent.value = intent;
+
+      if (Get.isBottomSheetOpen == true) {
+        Get.back<void>();
+      }
 
       if (intent.isSuccess) {
         paymentStatus.value = 'Payment successful';
@@ -206,12 +373,92 @@ class SchemeController extends GetxController {
     return latest;
   }
 
-  void redeem([String method = 'Showroom redemption']) {
-    redemptionMethod.value = method;
-    redemptionReference.value =
-        'WAV-RD-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-    isRedeemed.value = true;
-    _notify('Redemption request confirmed');
+  Future<void> _refreshRedemption(String enrollmentId) async {
+    try {
+      eligibility.value = await _repository.redemptionEligibility(enrollmentId);
+      final rows = await _repository.fetchRedemptions(enrollmentId);
+      lastRedemption.value = rows.isEmpty ? null : rows.first;
+      final open = lastRedemption.value;
+      isRedeemed.value = open != null &&
+          (open.status.toUpperCase() == 'COMPLETED' ||
+              enrollmentById(enrollmentId)?.isRedeemed == true);
+      if (open != null) {
+        redemptionReference.value = open.redemptionNumber;
+        redemptionMethod.value = open.mode;
+      }
+    } catch (_) {}
+  }
+
+  SchemeEnrollment? enrollmentById(String id) {
+    for (final item in enrollments) {
+      if (item.enrollmentId == id) return item;
+    }
+    return null;
+  }
+
+  Future<RedemptionEligibility?> loadRedemptionEligibility() async {
+    final enrollment = activeEnrollment;
+    if (enrollment == null) return null;
+    try {
+      eligibility.value =
+          await _repository.redemptionEligibility(enrollment.enrollmentId);
+      return eligibility.value;
+    } on ApiException catch (e) {
+      _notify(e.message);
+      return null;
+    }
+  }
+
+  Future<SchemeRedemption?> requestRedemption({String mode = 'FULL'}) async {
+    final enrollment = activeEnrollment;
+    if (enrollment == null) {
+      _notify('No scheme to redeem');
+      return null;
+    }
+    redemptionBusy.value = true;
+    try {
+      final created = await _repository.requestRedemption(
+        enrollmentId: enrollment.enrollmentId,
+        mode: mode,
+      );
+      lastRedemption.value = created;
+      redemptionMethod.value = created.mode;
+      redemptionReference.value = created.redemptionNumber;
+      isRedeemed.value = created.status.toUpperCase() == 'COMPLETED';
+      await load();
+      _notify('Redemption ${created.redemptionNumber} submitted');
+      return created;
+    } on ApiException catch (e) {
+      _notify(e.message);
+      return null;
+    } catch (e) {
+      _notify(e.toString());
+      return null;
+    } finally {
+      redemptionBusy.value = false;
+    }
+  }
+
+  void reset() {
+    catalogue.clear();
+    enrollments.clear();
+    selectedCatalogueItem.value = null;
+    paymentBusy.value = false;
+    paymentStatus.value = null;
+    lastIntent.value = null;
+    isRedeemed.value = false;
+    redemptionMethod.value = '';
+    redemptionReference.value = '';
+    redemptionBusy.value = false;
+    eligibility.value = null;
+    lastRedemption.value = null;
+    loadError.value = null;
+    isLoading.value = true;
+    monthlyAmount.value = 5000;
+    paidInstallments.value = 0;
+    hasJoined.value = false;
+    selectedPlanMonths.value = 11;
+    payments.clear();
   }
 
   void _notify(String message) {

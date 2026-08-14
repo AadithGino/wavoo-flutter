@@ -1,5 +1,4 @@
 import '../../core/utils/phone.dart';
-import 'user.dart';
 
 class Address {
   const Address({
@@ -38,66 +37,81 @@ class Address {
       stateName.trim().isNotEmpty &&
       RegExp(r'^\d{6}$').hasMatch(pincode.trim());
 
-  Address copyWith({bool? isDefault}) => Address(
-        id: id,
-        label: label,
-        lines: lines,
-        user: user,
-        name: name,
-        phone: phone,
-        line1: line1,
-        line2: line2,
-        city: city,
-        stateName: stateName,
-        pincode: pincode,
+  Address copyWith({
+    String? id,
+    String? label,
+    String? lines,
+    String? user,
+    String? name,
+    String? phone,
+    String? line1,
+    String? line2,
+    bool clearLine2 = false,
+    String? city,
+    String? stateName,
+    String? pincode,
+    bool? isDefault,
+  }) =>
+      Address(
+        id: id ?? this.id,
+        label: label ?? this.label,
+        lines: lines ?? this.lines,
+        user: user ?? this.user,
+        name: name ?? this.name,
+        phone: phone ?? this.phone,
+        line1: line1 ?? this.line1,
+        line2: clearLine2 ? null : (line2 ?? this.line2),
+        city: city ?? this.city,
+        stateName: stateName ?? this.stateName,
+        pincode: pincode ?? this.pincode,
         isDefault: isDefault ?? this.isDefault,
       );
 
   Map<String, dynamic> toCheckoutJson() => {
-        'label': label,
-        'name': name,
-        'phone': phone,
-        'line1': line1,
-        if (line2 != null && line2!.trim().isNotEmpty) 'line2': line2,
-        'city': city,
-        'stateName': stateName,
-        'pincode': pincode,
+        if (label.trim().isNotEmpty) 'label': label.trim(),
+        'name': name.trim(),
+        'phone': PhoneUtils.normalizeIndian(phone) ?? phone.trim(),
+        'line1': line1.trim(),
+        if (line2 != null && line2!.trim().isNotEmpty) 'line2': line2!.trim(),
+        'city': city.trim(),
+        'stateName': stateName.trim(),
+        'pincode': pincode.trim(),
       };
 
-  factory Address.fromProfile(CustomerProfile profile) {
-    final raw = profile.address ?? const <String, dynamic>{};
-    String read(String key, [String fallback = '']) {
-      final value = raw[key]?.toString().trim();
-      return (value == null || value.isEmpty) ? fallback : value;
-    }
+  Map<String, dynamic> toApiJson({bool includeDefault = true}) => {
+        ...toCheckoutJson(),
+        if (includeDefault) 'isDefault': isDefault,
+      };
 
-    final line1 = read('line1');
-    final line2 = read('line2');
-    final city = read('city');
-    final state = read('state') != '' ? read('state') : read('stateName');
-    final pincode = read('postalCode') != '' ? read('postalCode') : read('pincode');
-    final parts = [
-      line1,
-      line2,
-      city,
-      read('district'),
-      state,
-      pincode,
-    ].where((part) => part.isNotEmpty).toList();
-
+  factory Address.fromJson(Map<String, dynamic> json) {
+    final name = (json['name'] as String?)?.trim() ?? '';
+    final phone = (json['phone'] as String?)?.trim() ?? '';
+    final line1 = (json['line1'] as String?)?.trim() ?? '';
+    final line2 = (json['line2'] as String?)?.trim();
+    final city = (json['city'] as String?)?.trim() ?? '';
+    final state = (json['stateName'] as String?)?.trim().isNotEmpty == true
+        ? (json['stateName'] as String).trim()
+        : (json['state'] as String?)?.trim() ?? '';
+    final pincode = (json['pincode'] as String?)?.trim().isNotEmpty == true
+        ? (json['pincode'] as String).trim()
+        : (json['postalCode'] as String?)?.trim() ?? '';
+    final parts = [line1, if (line2 != null && line2.isNotEmpty) line2, city, state, pincode]
+        .where((part) => part.isNotEmpty)
+        .toList();
+    final label = (json['label'] as String?)?.trim();
     return Address(
-      id: 'profile',
-      label: 'Profile',
-      name: profile.displayName,
-      phone: profile.phone ?? '',
-      user: '${profile.displayName} · ${profile.phone ?? ''}',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      label: (label == null || label.isEmpty) ? 'Address' : label,
+      name: name,
+      phone: phone,
+      user: [name, PhoneUtils.display(phone)].where((part) => part.isNotEmpty).join(' · '),
       line1: line1,
-      line2: line2.isEmpty ? null : line2,
+      line2: line2 == null || line2.isEmpty ? null : line2,
       city: city,
       stateName: state,
       pincode: pincode,
       lines: parts.isEmpty ? 'No address on file' : parts.join('\n'),
-      isDefault: true,
+      isDefault: json['isDefault'] == true,
     );
   }
 }

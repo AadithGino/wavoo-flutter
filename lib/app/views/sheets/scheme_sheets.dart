@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -258,25 +260,26 @@ Future<void> showSchemePaymentSheet() async {
                       : intent?.isSuccess == true
                           ? 'DONE'
                           : 'PAY SECURELY',
-                  onPressed: busy || preview?.paymentAllowed == false
-                      ? null
-                      : () async {
-                          if (intent?.isSuccess == true) {
-                            Get.back<void>();
-                            return;
-                          }
-                          final result = await scheme.payInstallment();
-                          if (result?.isSuccess == true &&
-                              (enrollment?.isMatured == true ||
-                                  (enrollment != null &&
-                                      enrollment.paidInstallments + 1 >=
-                                          enrollment.totalInstallments))) {
-                            await Future<void>.delayed(
-                              const Duration(milliseconds: 350),
-                            );
-                            await showRedemptionSheet();
-                          }
-                        },
+                  onPressed: () {
+                    if (busy || preview?.paymentAllowed == false) return;
+                    unawaited(() async {
+                      if (intent?.isSuccess == true) {
+                        Get.back<void>();
+                        return;
+                      }
+                      final result = await scheme.payInstallment();
+                      if (result?.isSuccess == true &&
+                          (enrollment?.isMatured == true ||
+                              (enrollment != null &&
+                                  enrollment.paidInstallments + 1 >=
+                                      enrollment.totalInstallments))) {
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 350),
+                        );
+                        await showRedemptionSheet();
+                      }
+                    }());
+                  },
                 ),
               ],
             ),
@@ -289,33 +292,67 @@ Future<void> showSchemePaymentSheet() async {
 
 Future<void> showRedemptionSheet() async {
   final scheme = Get.find<SchemeController>();
+  await scheme.loadRedemptionEligibility();
   await openAppSheet(
-    Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        sheetHeader('Redeem your savings'),
-        Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            children: [
-              Text(
-                'Your plan has matured. Choose how you want to redeem.',
-                style: AppTypography.sans(size: 14, color: AppColors.muted),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              PrimaryButton(
-                label: 'REDEEM AT SHOWROOM',
-                onPressed: () {
-                  scheme.redeem('Showroom redemption');
-                  Get.back<void>();
-                },
-              ),
-            ],
+    Obx(() {
+      final enrollment = scheme.activeEnrollment;
+      final eligibility = scheme.eligibility.value;
+      final existing = scheme.lastRedemption.value;
+      final busy = scheme.redemptionBusy.value;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          sheetHeader('Redeem your savings'),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                Text(
+                  eligibility?.canRequest == true
+                      ? 'Your plan can be redeemed at the showroom. We will confirm the request with Wavoo.'
+                      : (eligibility?.blockingReason ??
+                          (enrollment == null
+                              ? 'No active scheme to redeem.'
+                              : 'Redemption is available once your plan matures.')),
+                  style: AppTypography.sans(size: 14, color: AppColors.muted),
+                  textAlign: TextAlign.center,
+                ),
+                if (eligibility != null && eligibility.totalRedeemablePaise > 0) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    Money.fromPaise(eligibility.totalRedeemablePaise),
+                    style: AppTypography.serif(size: 28),
+                  ),
+                  const Text('Redeemable value'),
+                ],
+                if (existing != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '${existing.redemptionNumber} · ${existing.status}',
+                    style: AppTypography.sans(size: 13, color: AppColors.goldDark),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                PrimaryButton(
+                  label: busy
+                      ? 'SUBMITTING…'
+                      : existing?.isOpen == true
+                          ? 'REQUEST SUBMITTED'
+                          : 'REDEEM AT SHOWROOM',
+                  onPressed: () {
+                    if (busy || eligibility?.canRequest != true) return;
+                    unawaited(() async {
+                      final created = await scheme.requestRedemption();
+                      if (created != null) Get.back<void>();
+                    }());
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
+        ],
+      );
+    }),
   );
 }
 

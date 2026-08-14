@@ -47,8 +47,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (signedIn) {
-      unawaited(Get.find<ShopController>().loadProducts());
+      unawaited(Get.find<ShopController>().loadCatalog());
       unawaited(Get.find<ShopController>().loadOrders());
+      unawaited(Get.find<ShopController>().loadAddresses());
       unawaited(Get.find<SchemeController>().load());
       unawaited(Get.find<HomeController>().load());
     }
