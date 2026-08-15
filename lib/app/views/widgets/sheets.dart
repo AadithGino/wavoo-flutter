@@ -14,6 +14,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/indian_states.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/address.dart';
+import '../../data/models/order.dart';
 import '../../data/models/product.dart';
 import 'primary_button.dart';
 import 'product_image.dart';
@@ -190,20 +191,16 @@ abstract final class AppSheets {
                         ),
                       ),
                       Obx(
-                        () => IconButton(
-                          onPressed: () => shop.toggleWishlist(product.id),
-                          icon: SvgPicture.asset(
-                            'assets/svg/wishlist.svg',
-                            width: 20,
-                            height: 20,
-                            colorFilter: ColorFilter.mode(
-                              shop.wishlist.contains(product.id)
-                                  ? AppColors.gold
-                                  : AppColors.goldDark,
-                              BlendMode.srcIn,
+                        () {
+                          final saved = shop.wishlist.contains(product.id);
+                          return IconButton(
+                            onPressed: () => shop.toggleWishlist(product.id),
+                            icon: Icon(
+                              saved ? Icons.favorite : Icons.favorite_border,
+                              color: AppColors.goldDark,
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -259,43 +256,56 @@ abstract final class AppSheets {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Container(
-                    height: 47,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFC48A27), Color(0xFF9E6106)],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x2E9E6206),
-                          blurRadius: 18,
-                          offset: Offset(0, 6),
+                  child: Obx(() {
+                    final inBag = shop.cart.containsKey(product.id);
+                    return Container(
+                      height: 47,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFC48A27), Color(0xFF9E6106)],
                         ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
                         borderRadius: BorderRadius.circular(8),
-                        onTap: () => shop.addToCart(product.id),
-                        child: Center(
-                          child: Text(
-                            'ADD TO BAG',
-                            style: AppTypography.sans(
-                              size: 10,
-                              weight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: .2,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x2E9E6206),
+                            blurRadius: 18,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            if (inBag) {
+                              Get.back<void>();
+                              Future<void>.delayed(
+                                const Duration(milliseconds: 200),
+                                showCart,
+                              );
+                              return;
+                            }
+                            shop.addToCart(product.id);
+                          },
+                          child: Center(
+                            child: Text(
+                              inBag ? 'GO TO BAG' : 'ADD TO BAG',
+                              style: AppTypography.sans(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: .2,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ],
             ),
@@ -540,6 +550,264 @@ abstract final class AppSheets {
     }
     if (head.isNotEmpty) groups.insert(0, head);
     return '₹${groups.join(',')},$tail';
+  }
+
+  static String _dateLabel(DateTime? date) {
+    if (date == null) return '';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  static Widget _chip(String label) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withOpacity(.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: AppTypography.sans(
+            size: 7,
+            weight: FontWeight.w800,
+            color: AppColors.goldDark,
+            letterSpacing: .42,
+          ),
+        ),
+      );
+
+  static Widget _orderCard(JewelleryOrder order) {
+    final date = _dateLabel(order.createdAt);
+    final count = order.itemCount;
+    final meta = [
+      if (date.isNotEmpty) date,
+      '$count ${count == 1 ? 'item' : 'items'}',
+      _money(order.total),
+    ].join(' · ');
+    final items =
+        order.lines.map((line) => '${line.name} × ${line.quantity}').join(', ');
+    final thumb = order.lines
+        .map((line) => line.image)
+        .whereType<String>()
+        .where((url) => url.trim().isNotEmpty)
+        .firstOrNull;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ProductImage(
+                  url: thumb,
+                  width: 56,
+                  height: 56,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Order ${order.displayNumber}',
+                            style: AppTypography.sans(
+                              size: 10,
+                              weight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _chip(order.statusLabel),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      meta,
+                      style: AppTypography.sans(
+                        size: 8,
+                        color: AppColors.muted,
+                        height: 1.45,
+                      ),
+                    ),
+                    if (items.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        items,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.sans(
+                          size: 8,
+                          color: AppColors.muted,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: SvgPicture.asset(
+                  'assets/svg/chevron-right-svgrepo-com.svg',
+                  width: 13,
+                  height: 13,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFFA49B90),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 10),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: AppColors.line)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'View order details',
+                  style: AppTypography.sans(
+                    size: 8,
+                    weight: FontWeight.w700,
+                    color: AppColors.goldDark,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward,
+                  size: 12,
+                  color: AppColors.goldDark,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _addressCard(
+    Address address, {
+    VoidCallback? onEdit,
+    VoidCallback? onSetDefault,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                address.label,
+                style: AppTypography.sans(size: 12, weight: FontWeight.w800),
+              ),
+              if (address.isDefault) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'DEFAULT',
+                    style: AppTypography.sans(
+                      size: 8,
+                      weight: FontWeight.w800,
+                      color: AppColors.goldDark,
+                      letterSpacing: .48,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              if (onEdit != null)
+                GestureDetector(
+                  onTap: onEdit,
+                  child: Text(
+                    'Edit',
+                    style: AppTypography.sans(
+                      size: 10,
+                      weight: FontWeight.w700,
+                      color: AppColors.goldDark,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            address.user,
+            style: AppTypography.sans(size: 11, weight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              if (address.streetLine.isNotEmpty) address.streetLine,
+              if (address.localityLine.isNotEmpty) address.localityLine,
+            ].join('\n'),
+            style: AppTypography.sans(
+              size: 10,
+              color: AppColors.muted,
+              height: 1.45,
+            ),
+          ),
+          if (onSetDefault != null) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: onSetDefault,
+              child: Text(
+                'Set default',
+                style: AppTypography.sans(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: AppColors.goldDark,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   static void showContactWavoo() {
@@ -1004,78 +1272,45 @@ abstract final class AppSheets {
               child: shop.ordersLoading.value && shop.orders.isEmpty
                   ? const OrdersListShimmer()
                   : shop.orders.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No orders yet. Your purchases will appear here.',
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
-                      itemCount: shop.orders.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) {
-                        final order = shop.orders[index];
-                        return Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: AppColors.line),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Order ${order.id}',
-                                      style: AppTypography.sans(
-                                        size: 10,
-                                        weight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.successSoft,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      order.status.toUpperCase(),
-                                      style: AppTypography.sans(
-                                        size: 9,
-                                        weight: FontWeight.w800,
-                                        color: AppColors.successDark,
-                                        letterSpacing: .42,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              'No orders yet.\nYour purchases will appear here after checkout.',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.sans(
+                                size: 11,
+                                color: AppColors.muted,
                               ),
-                              const SizedBox(height: 9),
-                              Text(
-                                '${order.itemCount} ${order.itemCount == 1 ? 'item' : 'items'} · ₹${order.total}',
-                                style: AppTypography.sans(
-                                  size: 8,
-                                  color: AppColors.muted,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        );
-                      },
-                    ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                          itemCount: shop.orders.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, index) {
+                            final order = shop.orders[index];
+                            return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () => showOrderDetail(order),
+                                child: _orderCard(order),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static void showOrderDetail(JewelleryOrder order) {
+    unawaited(_open(_OrderDetailSheet(order: order)));
   }
 
   static void showAddresses() {
@@ -1090,125 +1325,46 @@ abstract final class AppSheets {
               child: shop.addressesLoading.value && shop.addresses.isEmpty
                   ? const OrdersListShimmer()
                   : shop.addresses.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No saved addresses yet.',
-                        style: AppTypography.sans(
-                          size: 10,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
-                      itemCount: shop.addresses.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) {
-                  final address = shop.addresses[index];
-                  return Material(
-                    color: address.isDefault ? AppColors.cream : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: address.isDefault
-                          ? null
-                          : () => shop.setDefaultAddress(address.id),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 13,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: address.isDefault
-                                ? AppColors.gold
-                                : AppColors.line,
+                      ? Center(
+                          child: Text(
+                            'No saved addresses yet.',
+                            style: AppTypography.sans(
+                              size: 10,
+                              color: AppColors.muted,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: address.isDefault
-                              ? const [
-                                  BoxShadow(
-                                    color: Color(0x2EB97911),
-                                    blurRadius: 0,
-                                    spreadRadius: 1,
-                                  ),
-                                ]
-                              : null,
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                          itemCount: shop.addresses.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, index) {
+                            final address = shop.addresses[index];
+                            return _addressCard(
+                              address,
+                              onEdit: () =>
+                                  showAddressForm(prefilling: address),
+                              onSetDefault: address.isDefault
+                                  ? null
+                                  : () => shop.setDefaultAddress(address.id),
+                            );
+                          },
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  address.label,
-                                  style: AppTypography.sans(
-                                    size: 10,
-                                    weight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                if (address.isDefault)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.gold.withOpacity(.1),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      'DEFAULT',
-                                      style: AppTypography.sans(
-                                        size: 8,
-                                        weight: FontWeight.w800,
-                                        color: AppColors.goldDark,
-                                        letterSpacing: .48,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              address.user,
-                              style: AppTypography.sans(
-                                size: 10,
-                                weight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              address.lines,
-                              style: AppTypography.sans(
-                                size: 9,
-                                color: AppColors.muted,
-                                height: 1.45,
-                              ),
-                            ),
-                            if (!address.isDefault) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'SET AS DEFAULT',
-                                style: AppTypography.sans(
-                                  size: 10,
-                                  weight: FontWeight.w800,
-                                  color: AppColors.goldDark,
-                                  letterSpacing: .56,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(17, 0, 17, 8),
+              child: Text(
+                'Addresses selected during checkout are saved here for future orders.',
+                style: AppTypography.sans(
+                  size: 9,
+                  color: AppColors.muted,
+                  height: 1.5,
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               child: PrimaryButton(
                 label: 'ADD ADDRESS',
                 onPressed: showAddressForm,
@@ -1556,189 +1712,151 @@ abstract final class AppSheets {
 
   static void showSchemeEnrollment() {
     final scheme = Get.find<SchemeController>();
+    if (scheme.catalogue.isEmpty) {
+      unawaited(scheme.load());
+    }
     _open(
-      Obx(
-        () => Column(
+      Obx(() {
+        final items = scheme.catalogue.toList();
+        final selected = scheme.selectedCatalogueItem.value;
+        final busy = scheme.paymentBusy.value;
+        return Column(
           children: [
             _header('Wavoo Gold Scheme'),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(13),
-                    child: Image.asset(
-                      'assets/images/design_01.webp',
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(height: 17),
-                  Text(
-                    'Save today. Shine tomorrow.',
-                    style: AppTypography.serif(size: 25, height: 1),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Choose a comfortable monthly plan and build your jewellery savings with Wavoo.',
-                    style: AppTypography.sans(
-                      size: 10,
-                      color: AppColors.muted,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      for (final months in [11, 6, 12]) ...[
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => scheme.choosePlan(months),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.selectedPlanMonths.value == months
-                                    ? AppColors.cream
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color:
-                                      scheme.selectedPlanMonths.value == months
-                                          ? AppColors.gold
-                                          : AppColors.line,
-                                  width:
-                                      scheme.selectedPlanMonths.value == months
-                                          ? 2
-                                          : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '$months Months',
-                                    style: AppTypography.serif(
-                                      size: 15,
-                                      color: AppColors.goldDark,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    months == 11
-                                        ? 'Most popular'
-                                        : months == 6
-                                            ? 'Flexible plan'
-                                            : 'Maximum value',
-                                    style: AppTypography.sans(
-                                      size: 9,
-                                      color: AppColors.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (months != 12) const SizedBox(width: 8),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Monthly contribution',
-                    style: AppTypography.sans(
-                      size: 9,
-                      weight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Container(
-                    height: 46,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: AppColors.line),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          '₹',
+              child: items.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          scheme.isLoading.value
+                              ? 'Loading schemes…'
+                              : scheme.loadError.value ??
+                                  'No published schemes are available right now.',
+                          textAlign: TextAlign.center,
                           style: AppTypography.sans(
                             size: 12,
-                            weight: FontWeight.w700,
-                            color: AppColors.goldDark,
+                            color: AppColors.muted,
+                            height: 1.45,
                           ),
                         ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            '${scheme.monthlyAmount.value}',
-                            style: AppTypography.sans(size: 12),
-                          ),
-                        ),
-                        PopupMenuButton<int>(
-                          icon: const Icon(
-                            Icons.expand_more,
-                            color: AppColors.goldDark,
-                          ),
-                          onSelected: scheme.chooseAmount,
-                          itemBuilder: (_) => [5000, 10000, 15000, 25000]
-                              .map(
-                                (amount) => PopupMenuItem(
-                                  value: amount,
-                                  child: Text(scheme.money(amount)),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 13),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F2E9),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Row(
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
                       children: [
-                        const Icon(
-                          Icons.auto_awesome,
-                          color: AppColors.gold,
-                          size: 18,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(13),
+                          child: Image.asset(
+                            'assets/images/design_01.webp',
+                            width: double.infinity,
+                            height: 150,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Save ${scheme.money(scheme.monthlyAmount.value * scheme.selectedPlanMonths.value)} over ${scheme.selectedPlanMonths.value} months and unlock exclusive Wavoo scheme benefits.',
-                            style: AppTypography.sans(
-                              size: 9,
-                              color: const Color(0xFF5E574E),
-                              height: 1.45,
+                        const SizedBox(height: 17),
+                        Text(
+                          'Save today. Shine tomorrow.',
+                          style: AppTypography.serif(size: 25, height: 1),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Choose a published Wavoo gold plan. Monthly amount and tenure come from the scheme rules.',
+                          style: AppTypography.sans(
+                            size: 10,
+                            color: AppColors.muted,
+                            height: 1.6,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        for (final item in items)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: InkWell(
+                              onTap: () => scheme.selectCatalogueItem(item),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: selected?.templateId == item.templateId
+                                      ? AppColors.cream
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color:
+                                        selected?.templateId == item.templateId
+                                            ? AppColors.gold
+                                            : AppColors.line,
+                                    width:
+                                        selected?.templateId == item.templateId
+                                            ? 2
+                                            : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item.name,
+                                            style: AppTypography.serif(
+                                              size: 18,
+                                            ),
+                                          ),
+                                        ),
+                                        if (item.isFeatured)
+                                          Text(
+                                            'Featured',
+                                            style: AppTypography.sans(
+                                              size: 9,
+                                              weight: FontWeight.w700,
+                                              color: AppColors.goldDark,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      item.shortDescription.isEmpty
+                                          ? item.description
+                                          : item.shortDescription,
+                                      style: AppTypography.sans(
+                                        size: 10,
+                                        color: AppColors.muted,
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      item.amountPaise > 0 &&
+                                              item.totalInstallments > 0
+                                          ? '${scheme.moneyPaise(item.amountPaise)} / month · ${item.totalInstallments} months · Goal ${scheme.moneyPaise(item.goalPaise)}'
+                                          : 'Scheme rules unavailable',
+                                      style: AppTypography.sans(
+                                        size: 10,
+                                        weight: FontWeight.w700,
+                                        color: AppColors.goldDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
+                        const SizedBox(height: 4),
+                        PrimaryButton(
+                          label: 'START MY GOLD SAVINGS',
+                          loading: busy,
+                          onPressed: busy ? null : scheme.joinSelectedScheme,
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 13),
-                  PrimaryButton(
-                    label: 'START MY GOLD SAVINGS',
-                    loading: scheme.paymentBusy.value,
-                    onPressed: scheme.joinScheme,
-                  ),
-                ],
-              ),
             ),
           ],
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -1773,9 +1891,8 @@ abstract final class AppSheets {
                     label: 'PAY SECURELY',
                     loading: scheme.paymentBusy.value,
                     onPressed: () {
-                      final reachesMaturity =
-                          scheme.paidInstallments.value ==
-                              scheme.totalInstallments - 1;
+                      final reachesMaturity = scheme.paidInstallments.value ==
+                          scheme.totalInstallments - 1;
                       scheme.payInstallment();
                       if (reachesMaturity) {
                         Future<void>.delayed(
@@ -2372,7 +2489,8 @@ class _AddressFormSheetState extends State<_AddressFormSheet> {
         auth.profile.value?.phone ?? auth.user.value?.phone ?? '';
     _label = TextEditingController(text: prefilling?.label ?? 'Home');
     _name = TextEditingController(
-      text: prefilling?.name.isNotEmpty == true ? prefilling!.name : profileName,
+      text:
+          prefilling?.name.isNotEmpty == true ? prefilling!.name : profileName,
     );
     _phone = TextEditingController(
       text: _digitsPhone(
@@ -2442,15 +2560,12 @@ class _AddressFormSheetState extends State<_AddressFormSheet> {
       return;
     }
     setState(() => _saving = true);
-    final ok = await shop.saveAddress(
+    await shop.saveAddress(
       draft,
       existingId: _asNew ? null : widget.prefilling?.id,
     );
     if (!mounted) return;
-    setState(() => _saving = false);
-    if (ok && Get.isBottomSheetOpen == true) {
-      Get.back<void>();
-    }
+    Navigator.of(context).pop();
   }
 
   @override
@@ -2544,6 +2659,397 @@ class _AddressFormSheetState extends State<_AddressFormSheet> {
   }
 }
 
+class _OrderDetailSheet extends StatefulWidget {
+  const _OrderDetailSheet({required this.order});
+
+  final JewelleryOrder order;
+
+  @override
+  State<_OrderDetailSheet> createState() => _OrderDetailSheetState();
+}
+
+class _OrderDetailSheetState extends State<_OrderDetailSheet> {
+  late JewelleryOrder _order;
+  var _cancelling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final latest = await Get.find<ShopController>().loadOrderDetail(_order.id);
+    if (!mounted || latest == null) return;
+    setState(() => _order = latest);
+  }
+
+  Future<void> _cancel() async {
+    if (_cancelling) return;
+    setState(() => _cancelling = true);
+    final ok = await Get.find<ShopController>().cancelOrder(_order);
+    if (!mounted) return;
+    if (ok) {
+      final latest = Get.find<ShopController>().orderById(_order.id);
+      setState(() {
+        _cancelling = false;
+        if (latest != null) _order = latest;
+      });
+    } else {
+      setState(() => _cancelling = false);
+    }
+  }
+
+  Widget _section(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(title, style: AppTypography.serif(size: 18)),
+      );
+
+  Widget _row(String label, String value, {bool emphasis = false}) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: AppTypography.sans(size: 9, color: AppColors.muted),
+              ),
+            ),
+            Text(
+              value,
+              style: AppTypography.sans(
+                size: emphasis ? 12 : 9,
+                weight: FontWeight.w700,
+                color: emphasis ? AppColors.goldDark : AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final shop = Get.find<ShopController>();
+    return Obx(() {
+      final latest = shop.orderById(_order.id) ?? _order;
+      final date = AppSheets._dateLabel(latest.createdAt);
+      final address = latest.address;
+      final number = latest.displayNumber;
+      final loading = shop.orderDetailLoading.value && latest.lines.isEmpty;
+      final showPay = latest.isPendingPayment;
+      final showCancel = latest.canCancel;
+      return Column(
+        children: [
+          AppSheets._header(
+            number.isEmpty ? 'Order details' : 'Order $number',
+          ),
+          Expanded(
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.fromLTRB(17, 16, 17, 16),
+                    child: ProductSpecsShimmer(),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: AppColors.line),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    number.isEmpty
+                                        ? 'Order details'
+                                        : 'Order $number',
+                                    style: AppTypography.sans(
+                                      size: 12,
+                                      weight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                AppSheets._chip(latest.statusLabel),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            _row(
+                              'Order number',
+                              number.isEmpty ? '—' : number,
+                            ),
+                            if (date.isNotEmpty)
+                              Text(
+                                'Placed on $date',
+                                style: AppTypography.sans(
+                                  size: 8,
+                                  color: AppColors.muted,
+                                  height: 1.45,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _section('Items'),
+                      if (latest.lines.isEmpty)
+                        Text(
+                          '${latest.itemCount} ${latest.itemCount == 1 ? 'item' : 'items'}',
+                          style: AppTypography.sans(
+                            size: 9,
+                            color: AppColors.muted,
+                          ),
+                        )
+                      else
+                        ...latest.lines.map(_lineTile),
+                      const SizedBox(height: 18),
+                      _section('Bill summary'),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.ivory,
+                          border: Border.all(color: AppColors.line),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            if (latest.subtotalPaise != null)
+                              _row(
+                                'Subtotal',
+                                AppSheets._money(latest.subtotalPaise! ~/ 100),
+                              ),
+                            if (latest.gstPaise != null)
+                              _row(
+                                'GST',
+                                AppSheets._money(latest.gstPaise! ~/ 100),
+                              ),
+                            _row(
+                              'Total',
+                              AppSheets._money(latest.total),
+                              emphasis: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (address != null) ...[
+                        const SizedBox(height: 18),
+                        _section('Deliver to'),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 13,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.line),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                address.label.isEmpty
+                                    ? 'Address'
+                                    : address.label,
+                                style: AppTypography.sans(
+                                  size: 10,
+                                  weight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                address.user,
+                                style: AppTypography.sans(
+                                  size: 9,
+                                  weight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                [
+                                  if (address.streetLine.isNotEmpty)
+                                    address.streetLine,
+                                  if (address.localityLine.isNotEmpty)
+                                    address.localityLine,
+                                ].join('\n'),
+                                style: AppTypography.sans(
+                                  size: 8,
+                                  color: AppColors.muted,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _section('Payment'),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: AppColors.line),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _row('Method', latest.paymentMethodLabel),
+                            _row('Status', latest.statusLabel),
+                            if (latest.cancelReason != null &&
+                                latest.cancelReason!.trim().isNotEmpty)
+                              _row(
+                                'Cancel reason',
+                                latest.cancelReason!.trim(),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+          if (showPay || showCancel)
+            Container(
+              padding: const EdgeInsets.fromLTRB(17, 12, 17, 14),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFFDF9),
+                border: Border(top: BorderSide(color: AppColors.line)),
+              ),
+              child: Column(
+                children: [
+                  if (showPay) ...[
+                    if (shop.paymentStatus.value != null &&
+                        shop.paymentStatus.value!.trim().isNotEmpty) ...[
+                      Text(
+                        shop.paymentStatus.value!,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.sans(
+                          size: 8,
+                          color: AppColors.muted,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    PrimaryButton(
+                      label: 'CHECK PAYMENT',
+                      loading: shop.checkingPayment.value,
+                      onPressed: shop.checkingPayment.value
+                          ? null
+                          : () => unawaited(shop.resumeOrderPayment(latest)),
+                    ),
+                  ],
+                  if (showPay && showCancel) const SizedBox(height: 10),
+                  if (showCancel)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed:
+                            _cancelling ? null : () => unawaited(_cancel()),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 47),
+                          side: const BorderSide(color: Color(0xFFE6DAC9)),
+                          foregroundColor: AppColors.goldDark,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: AppTypography.sans(
+                            size: 10,
+                            weight: FontWeight.w700,
+                            letterSpacing: .2,
+                          ),
+                        ),
+                        child: Text(
+                          _cancelling ? 'CANCELLING…' : 'CANCEL ORDER',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _lineTile(OrderLine line) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.line),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ProductImage(
+                url: line.image,
+                width: 64,
+                height: 64,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    line.name,
+                    style: AppTypography.sans(
+                      size: 10,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    [
+                      'Qty ${line.quantity}',
+                      if (line.purityLabel != null &&
+                          line.purityLabel!.trim().isNotEmpty)
+                        line.purityLabel!.trim(),
+                      if (line.lineStatus != null &&
+                          line.lineStatus!.trim().isNotEmpty)
+                        line.lineStatus!.trim(),
+                    ].join(' · '),
+                    style: AppTypography.sans(
+                      size: 8,
+                      color: AppColors.muted,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              AppSheets._money(line.lineTotalPaise ~/ 100),
+              style: AppTypography.sans(
+                size: 10,
+                weight: FontWeight.w800,
+                color: AppColors.goldDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProductSpecs {
   const _ProductSpecs({
     required this.purity,
@@ -2608,4 +3114,3 @@ class _ProductSpecs {
     );
   }
 }
-

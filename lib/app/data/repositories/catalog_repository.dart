@@ -20,7 +20,9 @@ class CatalogRepository {
         ? data
         : (data is Map && data['items'] is List)
             ? data['items'] as List
-            : const [];
+            : (data is Map && data['products'] is List)
+                ? data['products'] as List
+                : const [];
     return list
         .whereType<Map>()
         .map((item) => parser(Map<String, dynamic>.from(item)))
@@ -60,11 +62,15 @@ class CatalogRepository {
       );
     } on ApiException catch (e) {
       if (!useLegacy && e.statusCode == 422) {
+        if (newArrival == true || bestSeller == true) {
+          return _fetchProductsOnce(
+            categoryId: categoryId,
+            category: category,
+          );
+        }
         _legacyProductQuery = true;
         return _fetchProductsOnce(
           category: category ?? categoryId,
-          newArrival: null,
-          bestSeller: null,
         );
       }
       rethrow;
@@ -113,11 +119,16 @@ class CatalogRepository {
   }
 
   Future<JewelleryOrder> fetchOrder(String orderId) async {
-    final data = await _client.get<Map<String, dynamic>>(
-      '/customer/ecommerce/orders/$orderId',
-      parser: (raw) => Map<String, dynamic>.from(raw as Map),
-    );
-    return JewelleryOrder.fromJson(data);
+    final data = await _client.get<dynamic>('/customer/ecommerce/orders/$orderId');
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final nested = map['order'];
+      if (nested is Map) {
+        return JewelleryOrder.fromJson(Map<String, dynamic>.from(nested));
+      }
+      return JewelleryOrder.fromJson(map);
+    }
+    throw ApiException(message: 'Unable to load order details', statusCode: 500);
   }
 
   Future<CheckoutResult> createOrder({
@@ -149,11 +160,21 @@ class CatalogRepository {
   }
 
   Future<JewelleryOrder> fetchOrderPaymentStatus(String orderId) async {
-    final data = await _client.get<Map<String, dynamic>>(
+    final data = await _client.get<dynamic>(
       '/customer/ecommerce/orders/$orderId/payment-status',
-      parser: (raw) => Map<String, dynamic>.from(raw as Map),
     );
-    return JewelleryOrder.fromJson(data);
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final nested = map['order'];
+      if (nested is Map) {
+        return JewelleryOrder.fromJson(Map<String, dynamic>.from(nested));
+      }
+      return JewelleryOrder.fromJson(map);
+    }
+    throw ApiException(
+      message: 'Unable to check payment status',
+      statusCode: 500,
+    );
   }
 
   Future<JewelleryOrder> cancelOrder(String orderId, {String? reason}) async {
@@ -206,38 +227,36 @@ class CatalogRepository {
         missing = e;
       }
     }
-    try {
-      return await _saveLegacyProfileAddress(address);
-    } on ApiException catch (e) {
-      if (!_isMissingRoute(e) && e.statusCode != 405) rethrow;
-      throw missing ?? e;
-    }
+    throw missing ??
+        ApiException(message: 'Unable to save address', statusCode: 404);
   }
 
-  Future<Address> updateAddress(String addressId, Map<String, dynamic> body) async {
-    ApiException? missing;
+  Future<Address> updateAddress(
+    String addressId,
+    Map<String, dynamic> body,
+  ) async {
+    ApiException? lastError;
     for (final path in [
       '/customer/addresses/$addressId',
       '/customer/ecommerce/addresses/$addressId',
     ]) {
       try {
         final data = await _client.patch<dynamic>(path, body: body);
-        return _parseAddressPayload(data, Address.fromJson(body));
+        return _parseAddressPayload(data, Address.fromJson({'id': addressId, ...body}));
       } on ApiException catch (e) {
-        if (!_isMissingRoute(e)) rethrow;
-        missing = e;
+        lastError = e;
+        if (!_isMissingRoute(e) && e.statusCode != 405) rethrow;
+      }
+      try {
+        final data = await _client.put<dynamic>(path, body: body);
+        return _parseAddressPayload(data, Address.fromJson({'id': addressId, ...body}));
+      } on ApiException catch (e) {
+        lastError = e;
+        if (!_isMissingRoute(e) && e.statusCode != 405) rethrow;
       }
     }
-    final draft = Address.fromJson({
-      'id': addressId,
-      ...body,
-    });
-    try {
-      return await _saveLegacyProfileAddress(draft);
-    } on ApiException catch (e) {
-      if (!_isMissingRoute(e) && e.statusCode != 405) rethrow;
-      throw missing ?? e;
-    }
+    throw lastError ??
+        ApiException(message: 'Unable to update address', statusCode: 404);
   }
 
   Future<void> deleteAddress(String addressId) async {
@@ -255,37 +274,6 @@ class CatalogRepository {
       }
     }
     if (missing != null) throw missing;
-  }
-
-  Future<Address> _saveLegacyProfileAddress(Address address) async {
-    final snapshot = {
-      'line1': address.line1.trim(),
-      if (address.line2 != null && address.line2!.trim().isNotEmpty)
-        'line2': address.line2!.trim(),
-      'city': address.city.trim(),
-      'state': address.stateName.trim(),
-      'postalCode': address.pincode.trim(),
-    };
-    final body = {'address': snapshot};
-    try {
-      final data = await _client.patch<dynamic>('/customer/profile', body: body);
-      return _addressFromProfile(data, address);
-    } on ApiException catch (e) {
-      if (!_isMissingRoute(e) && e.statusCode != 405) rethrow;
-    }
-    final data = await _client.put<dynamic>('/customer/profile', body: body);
-    return _addressFromProfile(data, address);
-  }
-
-  Address _addressFromProfile(dynamic data, Address fallback) {
-    if (data is Map) {
-      final saved = CustomerProfile.fromJson(Map<String, dynamic>.from(data))
-          .savedAddresses;
-      if (saved.isNotEmpty) return saved.first;
-      final parsed = _parseAddressPayload(data, fallback);
-      if (parsed.line1.isNotEmpty) return parsed;
-    }
-    return fallback.copyWith(id: fallback.id.isEmpty ? 'profile' : fallback.id);
   }
 
   Address _parseAddressPayload(dynamic data, Address fallback) {

@@ -37,6 +37,24 @@ class Address {
       stateName.trim().isNotEmpty &&
       RegExp(r'^\d{6}$').hasMatch(pincode.trim());
 
+  String get streetLine {
+    final parts = [
+      line1.trim(),
+      if (line2 != null && line2!.trim().isNotEmpty) line2!.trim(),
+    ].where((part) => part.isNotEmpty);
+    return parts.join(', ');
+  }
+
+  String get localityLine {
+    final locality = [city.trim(), stateName.trim()]
+        .where((part) => part.isNotEmpty)
+        .join(', ');
+    final pin = pincode.trim();
+    if (locality.isEmpty) return pin;
+    if (pin.isEmpty) return locality;
+    return '$locality — $pin';
+  }
+
   Address copyWith({
     String? id,
     String? label,

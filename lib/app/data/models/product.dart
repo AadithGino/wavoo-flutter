@@ -157,8 +157,8 @@ class Product {
     final name = (json['name'] as String?)?.trim() ?? 'Jewellery';
     final inStock = json['inStock'] != false;
     final purity = (json['purityLabel'] as String?)?.trim();
-    final isNew = json['isNewArrival'] == true;
-    final isBest = json['isBestSeller'] == true;
+    final isNew = _flag(json['isNewArrival']) || _flag(json['newArrival']);
+    final isBest = _flag(json['isBestSeller']) || _flag(json['bestSeller']);
     final tag = !inStock
         ? 'Sold out'
         : isNew
@@ -243,5 +243,14 @@ class Product {
     if (lower.contains('bangle')) return 'Bangles';
     if (lower.contains('pendant')) return 'Pendants';
     return raw;
+  }
+
+  static bool _flag(dynamic value) {
+    if (value == true || value == 1) return true;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == 'true' || normalized == '1' || normalized == 'yes';
+    }
+    return false;
   }
 }

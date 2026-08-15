@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/scheme_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../data/models/scheme.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/sheets.dart';
 import '../widgets/shimmers.dart';
@@ -26,27 +27,42 @@ class SchemesView extends StatelessWidget {
           if (scheme.isLoading.value) {
             return const SchemePageShimmer();
           }
+          scheme.paymentBusy.value;
+          final plans = scheme.enrollments.toList();
+          final available = scheme.catalogue.toList();
           return Column(
             children: [
-              if (scheme.hasJoined.value) ...[
+              if (plans.isNotEmpty) ...[
                 _SectionHeader(
-                  title: 'My plans',
+                  title: plans.length == 1 ? 'My plan' : 'My plans',
                   action: 'View details',
-                  onTap: AppSheets.showSchemeDetails,
+                  onTap: () {
+                    scheme.selectEnrollment(plans.first);
+                    AppSheets.showSchemeDetails();
+                  },
                 ),
-                Obx(() {
-                  scheme.paidInstallments.value;
-                  scheme.monthlyAmount.value;
-                  scheme.isRedeemed.value;
-                  return _PlanCard(scheme: scheme);
-                }),
+                for (var i = 0; i < plans.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  _PlanCard(
+                    scheme: scheme,
+                    enrollment: plans[i],
+                    compact: plans.length > 1,
+                  ),
+                ],
                 const SizedBox(height: 18),
               ],
-              const _SectionHeader(title: 'Enroll in a scheme'),
-              Obx(() {
-                scheme.hasJoined.value;
-                return _EnrollmentCard(scheme: scheme);
-              }),
+              _SectionHeader(
+                title: available.length > 1
+                    ? 'Available schemes'
+                    : 'Enroll in a scheme',
+              ),
+              if (available.isEmpty)
+                _EnrollmentCard(scheme: scheme)
+              else
+                for (var i = 0; i < available.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  _CatalogueCard(scheme: scheme, item: available[i]),
+                ],
             ],
           );
         }),
@@ -94,13 +110,28 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  const _PlanCard({required this.scheme});
+  const _PlanCard({
+    required this.scheme,
+    required this.enrollment,
+    this.compact = false,
+  });
 
   final SchemeController scheme;
+  final SchemeEnrollment enrollment;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final upcoming = scheme.upcomingPayments.take(4).toList();
+    final redeemed = enrollment.isRedeemed;
+    final matured = enrollment.isMatured;
+    final upcoming = compact
+        ? const <SchemePayment>[]
+        : scheme.upcomingFor(enrollment).take(4).toList();
+    final statusLabel = redeemed
+        ? 'REDEEMED'
+        : matured
+            ? 'MATURED'
+            : 'ACTIVE';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -130,9 +161,9 @@ class _PlanCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      scheme.isRedeemed.value
+                      redeemed
                           ? 'REDEEMED PLAN'
-                          : scheme.matured
+                          : matured
                               ? 'MATURED PLAN'
                               : 'ACTIVE PLAN',
                       style: AppTypography.sans(
@@ -144,7 +175,7 @@ class _PlanCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      scheme.planName,
+                      enrollment.planName,
                       style: AppTypography.serif(size: 20, height: 1.05),
                     ),
                   ],
@@ -158,11 +189,7 @@ class _PlanCard extends StatelessWidget {
                   border: Border.all(color: AppColors.goldBorder),
                 ),
                 child: Text(
-                  scheme.isRedeemed.value
-                      ? 'REDEEMED'
-                      : scheme.matured
-                          ? 'MATURED'
-                          : 'ACTIVE',
+                  statusLabel,
                   style: AppTypography.sans(
                     size: 9,
                     weight: FontWeight.w800,
@@ -179,7 +206,7 @@ class _PlanCard extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   label: 'Saved so far',
-                  value: scheme.money(scheme.savedAmount),
+                  value: scheme.moneyPaise(enrollment.savedPaise),
                 ),
               ),
               const SizedBox(width: 8),
@@ -187,14 +214,14 @@ class _PlanCard extends StatelessWidget {
                 child: _StatCard(
                   label: 'Instalments',
                   value:
-                      '${scheme.paidInstallments.value}/${scheme.totalInstallments}',
+                      '${enrollment.paidInstallments}/${enrollment.totalInstallments}',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _StatCard(
                   label: 'Maturity',
-                  value: scheme.dateLabel(scheme.maturityDate),
+                  value: scheme.dateLabel(enrollment.maturityDate),
                 ),
               ),
             ],
@@ -208,7 +235,7 @@ class _PlanCard extends StatelessWidget {
                 style: AppTypography.sans(size: 8, color: AppColors.muted),
               ),
               Text(
-                '${scheme.progressPercent}%',
+                '${(enrollment.progress * 100).round()}%',
                 style: AppTypography.sans(
                   size: 8,
                   weight: FontWeight.w800,
@@ -221,13 +248,13 @@ class _PlanCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: scheme.progress,
+              value: enrollment.progress,
               minHeight: 6,
               color: AppColors.goldLight,
               backgroundColor: AppColors.line,
             ),
           ),
-          if (!scheme.matured && !scheme.isRedeemed.value) ...[
+          if (!matured && !redeemed && upcoming.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(
               'Upcoming payments',
@@ -248,7 +275,10 @@ class _PlanCard extends StatelessWidget {
                       payment: upcoming[index],
                       showDivider: index != upcoming.length - 1,
                       onPay: upcoming[index].isNext
-                          ? AppSheets.showSchemePayment
+                          ? () {
+                              scheme.selectEnrollment(enrollment);
+                              AppSheets.showSchemePayment();
+                            }
                           : null,
                     ),
                 ],
@@ -260,7 +290,10 @@ class _PlanCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: AppSheets.showSchemeDetails,
+                  onPressed: () {
+                    scheme.selectEnrollment(enrollment);
+                    AppSheets.showSchemeDetails();
+                  },
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 36),
                     side: const BorderSide(color: Color(0xFFE6DAC9)),
@@ -282,9 +315,14 @@ class _PlanCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: FilledButton(
-                  onPressed: scheme.matured
-                      ? AppSheets.showRedemption
-                      : AppSheets.showSchemePayment,
+                  onPressed: () {
+                    scheme.selectEnrollment(enrollment);
+                    if (matured) {
+                      AppSheets.showRedemption();
+                    } else {
+                      AppSheets.showSchemePayment();
+                    }
+                  },
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(0, 36),
                     shape: RoundedRectangleBorder(
@@ -292,8 +330,8 @@ class _PlanCard extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    scheme.matured ? 'Redeem now' : 'Pay next',
-                    style: TextStyle(fontSize: 10),
+                    matured ? 'Redeem now' : 'Pay next',
+                    style: const TextStyle(fontSize: 10),
                   ),
                 ),
               ),
@@ -437,6 +475,137 @@ class _PaymentRow extends StatelessWidget {
                 color: AppColors.goldDark,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogueCard extends StatelessWidget {
+  const _CatalogueCard({required this.scheme, required this.item});
+
+  final SchemeController scheme;
+  final SchemeCatalogueItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = scheme.paymentBusy.value &&
+        scheme.selectedCatalogueItem.value?.templateId == item.templateId;
+    final description = item.shortDescription.isNotEmpty
+        ? item.shortDescription
+        : item.description;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.goldBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F8B5A14),
+            blurRadius: 22,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.isFeatured ? 'FEATURED SCHEME' : 'GOLD SCHEME',
+                  style: AppTypography.sans(
+                    size: 9,
+                    weight: FontWeight.w800,
+                    color: AppColors.goldDark,
+                    letterSpacing: .84,
+                  ),
+                ),
+              ),
+              if (item.totalInstallments > 0)
+                Text(
+                  '${item.totalInstallments} months',
+                  style: AppTypography.sans(
+                    size: 9,
+                    weight: FontWeight.w700,
+                    color: AppColors.muted,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(item.name, style: AppTypography.serif(size: 20, height: 1.05)),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              description,
+              style: AppTypography.sans(
+                size: 9,
+                color: AppColors.muted,
+                height: 1.45,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  label: 'Monthly',
+                  value: item.amountPaise > 0
+                      ? scheme.moneyPaise(item.amountPaise)
+                      : '—',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _StatCard(
+                  label: 'Tenure',
+                  value: item.totalInstallments > 0
+                      ? '${item.totalInstallments} months'
+                      : '—',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _StatCard(
+                  label: 'Goal',
+                  value: item.goalPaise > 0
+                      ? scheme.moneyPaise(item.goalPaise)
+                      : '—',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: FilledButton(
+              onPressed: busy || item.versionId.isEmpty
+                  ? null
+                  : () => scheme.joinCatalogueItem(item),
+              child: busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'ENROLL',
+                      style: AppTypography.sans(
+                        size: 11,
+                        weight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
         ],
       ),
     );

@@ -65,7 +65,7 @@ class LocalShopStore {
   Future<void> clear() async {
     await init();
     final box = _box;
-    if (box == null) return;
+    if (box == null || !box.isOpen) return;
     await box.clear();
   }
 

@@ -35,6 +35,7 @@ class SchemeController extends GetxController {
   final catalogue = <SchemeCatalogueItem>[].obs;
   final enrollments = <SchemeEnrollment>[].obs;
   final selectedCatalogueItem = Rxn<SchemeCatalogueItem>();
+  final selectedEnrollmentId = ''.obs;
   final paymentBusy = false.obs;
   final paymentStatus = RxnString();
   final lastIntent = Rxn<PaymentIntent>();
@@ -53,10 +54,21 @@ class SchemeController extends GetxController {
   final payments = <SchemePayment>[].obs;
 
   SchemeEnrollment? get activeEnrollment {
+    final selected = selectedEnrollmentId.value;
+    if (selected.isNotEmpty) {
+      for (final item in enrollments) {
+        if (item.enrollmentId == selected) return item;
+      }
+    }
     for (final item in enrollments) {
       if (item.isActive) return item;
     }
     return enrollments.isEmpty ? null : enrollments.first;
+  }
+
+  void selectEnrollment(SchemeEnrollment enrollment) {
+    selectedEnrollmentId.value = enrollment.enrollmentId;
+    _syncUiFromApi();
   }
 
   String get planName =>
@@ -107,6 +119,24 @@ class SchemeController extends GetxController {
         ),
       );
 
+  List<SchemePayment> upcomingFor(SchemeEnrollment enrollment) {
+    final remaining = (enrollment.totalInstallments - enrollment.paidInstallments)
+        .clamp(0, enrollment.totalInstallments)
+        .toInt();
+    final next = enrollment.nextDueDate ?? DateTime.now();
+    final amount =
+        enrollment.amountPaise > 0 ? enrollment.amountPaise ~/ 100 : monthlyAmount.value;
+    return List.generate(
+      remaining,
+      (index) => SchemePayment(
+        installment: enrollment.paidInstallments + index + 1,
+        date: DateTime(next.year, next.month + index, next.day),
+        amount: amount,
+        isNext: index == 0,
+      ),
+    );
+  }
+
   String money(int rupees) => Money.formatRupees(rupees);
   String moneyPaise(int paise) => Money.fromPaise(paise);
 
@@ -148,6 +178,10 @@ class SchemeController extends GetxController {
       ]);
       catalogue.assignAll(results[0] as List<SchemeCatalogueItem>);
       enrollments.assignAll(results[1] as List<SchemeEnrollment>);
+      if (selectedEnrollmentId.value.isNotEmpty &&
+          enrollmentById(selectedEnrollmentId.value) == null) {
+        selectedEnrollmentId.value = '';
+      }
       if (selectedCatalogueItem.value == null && catalogue.isNotEmpty) {
         selectedCatalogueItem.value = catalogue.first;
       }
@@ -232,10 +266,19 @@ class SchemeController extends GetxController {
     );
   }
 
+  Future<bool> joinCatalogueItem(SchemeCatalogueItem item) {
+    selectCatalogueItem(item);
+    return joinSelectedScheme();
+  }
+
   Future<bool> joinSelectedScheme() async {
     final item = selectedCatalogueItem.value;
     if (item == null) {
       _notify('Select a scheme to continue');
+      return false;
+    }
+    if (item.versionId.isEmpty) {
+      _notify('This scheme cannot be enrolled right now');
       return false;
     }
     if (item.amountPaise <= 0 || item.totalInstallments <= 0) {
@@ -249,7 +292,9 @@ class SchemeController extends GetxController {
         versionId: item.versionId,
       );
       await load();
-      Get.back<void>();
+      if (Get.isBottomSheetOpen == true) {
+        Get.back<void>();
+      }
       _notify('${enrollment.planName} activated');
       return true;
     } on ApiException catch (e) {
@@ -443,6 +488,7 @@ class SchemeController extends GetxController {
     catalogue.clear();
     enrollments.clear();
     selectedCatalogueItem.value = null;
+    selectedEnrollmentId.value = '';
     paymentBusy.value = false;
     paymentStatus.value = null;
     lastIntent.value = null;

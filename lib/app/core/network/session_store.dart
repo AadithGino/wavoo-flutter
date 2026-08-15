@@ -37,7 +37,9 @@ class SessionStore {
 
   Future<void> clear() async {
     await init();
-    await _prefs!.remove(_accessKey);
-    await _prefs!.remove(_refreshKey);
+    final keys = _prefs!.getKeys().where((key) => key.startsWith('wavoo_')).toList();
+    for (final key in keys) {
+      await _prefs!.remove(key);
+    }
   }
 }

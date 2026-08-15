@@ -11,6 +11,7 @@ import '../data/repositories/profile_repository.dart';
 import '../views/app_shell_view.dart';
 import '../views/screens/login_view.dart';
 import 'home_controller.dart';
+import 'navigation_controller.dart';
 import 'scheme_controller.dart';
 import 'shop_controller.dart';
 
@@ -51,7 +52,7 @@ class AuthController extends GetxController {
       final session = await _auth.currentSession();
       if (session == null) {
         isAuthenticated.value = false;
-        await _clearShopSession();
+        await _wipeLocalState();
         return false;
       }
       user.value = session;
@@ -215,29 +216,12 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     await _auth.logout();
-    user.value = null;
-    profile.value = null;
-    isAuthenticated.value = false;
-    otpStep.value = 0;
-    mobile.value = '';
-    challengeId.value = '';
-    registrationToken.value = '';
-    resendSecondsLeft.value = 0;
-    _resendTimer?.cancel();
-    if (Get.isRegistered<ShopController>()) {
-      await Get.find<ShopController>().reset();
-    }
-    if (Get.isRegistered<SchemeController>()) {
-      Get.find<SchemeController>().reset();
-    }
+    await _wipeLocalState();
     Get.offAll(() => const LoginView());
   }
 
   void handleSessionExpired() {
-    user.value = null;
-    profile.value = null;
-    isAuthenticated.value = false;
-    unawaited(_clearShopSession());
+    unawaited(_wipeLocalState());
     if (Get.currentRoute.contains('Login')) return;
     Get.offAll(() => const LoginView());
     Get.showSnackbar(
@@ -277,9 +261,32 @@ class AuthController extends GetxController {
     await Get.find<ShopController>().restoreBag();
   }
 
-  Future<void> _clearShopSession() async {
-    if (!Get.isRegistered<ShopController>()) return;
-    await Get.find<ShopController>().reset();
+  Future<void> _wipeLocalState() async {
+    user.value = null;
+    profile.value = null;
+    isAuthenticated.value = false;
+    otpStep.value = 0;
+    mobile.value = '';
+    challengeId.value = '';
+    registrationToken.value = '';
+    resendSecondsLeft.value = 0;
+    errorMessage.value = null;
+    _resendTimer?.cancel();
+    if (Get.isRegistered<ShopController>()) {
+      await Get.find<ShopController>().reset();
+    }
+    if (Get.isRegistered<SchemeController>()) {
+      Get.find<SchemeController>().reset();
+    }
+    if (Get.isRegistered<NavigationController>()) {
+      Get.find<NavigationController>().changePage(0);
+    }
+    if (Get.isRegistered<HomeController>()) {
+      final home = Get.find<HomeController>();
+      home.goldRatePaisePerGram.value = null;
+      home.goldRateLabel.value = null;
+      home.loadError.value = null;
+    }
   }
 
   void _goHome() {

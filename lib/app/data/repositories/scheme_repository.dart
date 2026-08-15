@@ -11,17 +11,22 @@ class SchemeRepository {
 
   Future<List<SchemeCatalogueItem>> fetchCatalogue() async {
     final data = await _client.get<dynamic>('/customer/scheme-catalogue');
-    final list = data is List ? data : const [];
-    return list
+    final list = _asList(data);
+    final items = list
         .whereType<Map>()
         .map((item) => SchemeCatalogueItem.fromJson(Map<String, dynamic>.from(item)))
-        .where((item) => item.templateId.isNotEmpty && item.versionId.isNotEmpty)
-        .toList();
+        .where((item) => item.templateId.isNotEmpty)
+        .toList()
+      ..sort((a, b) {
+        if (a.isFeatured != b.isFeatured) return a.isFeatured ? -1 : 1;
+        return a.displayOrder.compareTo(b.displayOrder);
+      });
+    return items;
   }
 
   Future<List<SchemeEnrollment>> fetchEnrollments() async {
     final data = await _client.get<dynamic>('/customer/scheme-enrollments');
-    final list = data is List ? data : const [];
+    final list = _asList(data);
     final enrollments = <SchemeEnrollment>[];
     for (final item in list.whereType<Map>()) {
       var enrollment =
@@ -170,5 +175,29 @@ class SchemeRepository {
         .whereType<Map>()
         .map((item) => SchemeRedemption.fromJson(Map<String, dynamic>.from(item)))
         .toList();
+  }
+
+  List<dynamic> _asList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map) {
+      for (final key in const [
+        'items',
+        'catalogue',
+        'enrollments',
+        'schemes',
+        'templates',
+        'published',
+        'results',
+      ]) {
+        final nested = data[key];
+        if (nested is List) return nested;
+      }
+      if (data['templateId'] != null ||
+          data['id'] != null ||
+          data['content'] is Map) {
+        return [data];
+      }
+    }
+    return const [];
   }
 }

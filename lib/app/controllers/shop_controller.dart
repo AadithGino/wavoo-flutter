@@ -41,12 +41,14 @@ class ShopController extends GetxController {
   final selectedAddressId = ''.obs;
   final orders = <JewelleryOrder>[].obs;
   final placingOrder = false.obs;
+  final checkingPayment = false.obs;
   final paymentStatus = RxnString();
   final paymentMethod = 'PHONEPE'.obs;
   final addressBusy = false.obs;
   final ordersLoading = false.obs;
   final addressesLoading = false.obs;
   final detailLoading = false.obs;
+  final orderDetailLoading = false.obs;
 
   List<({String id, String name, String image})> get categoryTiles {
     if (catalogCategories.isNotEmpty) {
@@ -106,9 +108,24 @@ class ShopController extends GetxController {
     }).toList();
   }
 
-  List<Product> get newArrivals => newArrivalProducts.take(8).toList();
+  List<Product> get newArrivals {
+    if (newArrivalProducts.isNotEmpty) {
+      return newArrivalProducts.take(8).toList();
+    }
+    final flagged = products.where((item) => item.isNewArrival).take(8).toList();
+    if (flagged.isNotEmpty) return flagged;
+    return products.take(4).toList();
+  }
 
-  List<Product> get bestSellers => bestSellerProducts.take(8).toList();
+  List<Product> get bestSellers {
+    if (bestSellerProducts.isNotEmpty) {
+      return bestSellerProducts.take(8).toList();
+    }
+    final flagged = products.where((item) => item.isBestSeller).take(8).toList();
+    if (flagged.isNotEmpty) return flagged;
+    if (products.length <= 4) return products.toList();
+    return products.skip(4).take(4).toList();
+  }
 
   List<Product> get searchedProducts {
     final query = searchQuery.value.trim().toLowerCase();
@@ -224,7 +241,9 @@ class ShopController extends GetxController {
         _merchandisingResult(arrivals, (item) => item.isNewArrival),
       );
     } catch (_) {
-      newArrivalProducts.clear();
+      newArrivalProducts.assignAll(
+        products.where((item) => item.isNewArrival),
+      );
     }
     try {
       final sellers = await _repository.fetchProducts(bestSeller: true);
@@ -232,7 +251,9 @@ class ShopController extends GetxController {
         _merchandisingResult(sellers, (item) => item.isBestSeller),
       );
     } catch (_) {
-      bestSellerProducts.clear();
+      bestSellerProducts.assignAll(
+        products.where((item) => item.isBestSeller),
+      );
     }
   }
 
@@ -240,13 +261,10 @@ class ShopController extends GetxController {
     List<Product> fetched,
     bool Function(Product) flagged,
   ) {
-    if (fetched.isEmpty) return const [];
     final marked = fetched.where(flagged).toList();
     if (marked.isNotEmpty) return marked;
-    if (products.isNotEmpty && fetched.length >= products.length) {
-      return const [];
-    }
-    return fetched;
+    if (fetched.isNotEmpty) return fetched;
+    return products.where(flagged).toList();
   }
 
   Future<void> loadProducts() => loadCatalog();
@@ -259,6 +277,23 @@ class ShopController extends GetxController {
     } catch (_) {
     } finally {
       ordersLoading.value = false;
+    }
+  }
+
+  Future<JewelleryOrder?> loadOrderDetail(String id) async {
+    orderDetailLoading.value = true;
+    try {
+      final detail = await _repository.fetchOrder(id);
+      _upsertOrder(detail);
+      return detail;
+    } on ApiException catch (e) {
+      final existing = orderById(id);
+      if (existing == null) _notify(e.message);
+      return existing;
+    } catch (_) {
+      return orderById(id);
+    } finally {
+      orderDetailLoading.value = false;
     }
   }
 
@@ -401,54 +436,15 @@ class ShopController extends GetxController {
     addressBusy.value = true;
     try {
       if (existingId != null && existingId.isNotEmpty) {
-        final updated = await _repository.updateAddress(existingId, draft.toApiJson());
-        final index = addresses.indexWhere((item) => item.id == existingId);
-        if (index >= 0) {
-          addresses[index] = updated;
-        } else {
-          addresses.add(updated);
-        }
-        if (updated.isDefault) {
-          addresses.assignAll(
-            addresses.map((item) => item.copyWith(isDefault: item.id == updated.id)),
-          );
-        }
-        selectAddress(updated.id);
+        await _repository.updateAddress(existingId, draft.toApiJson());
+        _notify('Address updated');
       } else {
-        final created = await _repository.createAddress(draft);
-        if (created.isDefault) {
-          addresses.assignAll([
-            created,
-            ...addresses.map((item) => item.copyWith(isDefault: false)),
-          ]);
-        } else {
-          addresses.add(created);
-        }
-        selectAddress(created.id);
+        await _repository.createAddress(draft);
+        _notify('Address saved');
       }
-      _notify('Address saved');
+      await loadAddresses();
       return true;
     } on ApiException catch (e) {
-      if (e.statusCode == 404 || e.code == 'ROUTE_NOT_FOUND') {
-        final local = Address.fromJson({
-          ...draft.toApiJson(),
-          'id': existingId ?? _uuid.v4(),
-          'label': draft.label,
-        });
-        if (existingId != null) {
-          final index = addresses.indexWhere((item) => item.id == existingId);
-          if (index >= 0) {
-            addresses[index] = local;
-          } else {
-            addresses.add(local);
-          }
-        } else {
-          addresses.add(local);
-        }
-        selectAddress(local.id);
-        _notify('Address saved for checkout');
-        return true;
-      }
       _notify(e.message);
       return false;
     } catch (e) {
@@ -556,27 +552,32 @@ class ShopController extends GetxController {
   }
 
   Future<JewelleryOrder> resumeOrderPayment(JewelleryOrder order) async {
-    placingOrder.value = true;
+    checkingPayment.value = true;
     paymentStatus.value = 'Checking payment…';
     try {
-      final latest = await _pollOrderPayment(order.id);
+      final latest = await _repository.fetchOrderPaymentStatus(order.id);
       _upsertOrder(latest);
       if (latest.isConfirmed) {
         paymentStatus.value = 'Payment successful';
-        _notify('Order ${latest.orderNumber} is confirmed');
+        _notify('Order ${latest.displayNumber} is confirmed');
       } else if (latest.isFailed) {
         paymentStatus.value = 'Payment failed';
-        _notify('Payment failed for ${latest.orderNumber}');
+        _notify('Payment failed for ${latest.displayNumber}');
       } else {
         paymentStatus.value = 'Payment still pending';
         _notify('Payment is still pending');
       }
       return latest;
     } on ApiException catch (e) {
+      paymentStatus.value = e.message;
       _notify(e.message);
-      return order;
+      return orderById(order.id) ?? order;
+    } catch (e) {
+      paymentStatus.value = e.toString();
+      _notify(e.toString());
+      return orderById(order.id) ?? order;
     } finally {
-      placingOrder.value = false;
+      checkingPayment.value = false;
     }
   }
 
@@ -656,6 +657,8 @@ class ShopController extends GetxController {
     selectedCategory.value = 'All';
     selectedAddressId.value = '';
     searchQuery.value = '';
+    placingOrder.value = false;
+    checkingPayment.value = false;
     paymentStatus.value = null;
     paymentMethod.value = 'PHONEPE';
     loadError.value = null;
@@ -663,6 +666,7 @@ class ShopController extends GetxController {
     ordersLoading.value = false;
     addressesLoading.value = false;
     detailLoading.value = false;
+    orderDetailLoading.value = false;
     await clearBag();
   }
 

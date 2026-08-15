@@ -33,12 +33,26 @@ class SchemeCatalogueItem {
   int get goalPaise => amountPaise * totalInstallments;
 
   factory SchemeCatalogueItem.fromJson(Map<String, dynamic> json) {
+    final template = json['template'] is Map
+        ? Map<String, dynamic>.from(json['template'] as Map)
+        : <String, dynamic>{};
+    final version = json['version'] is Map
+        ? Map<String, dynamic>.from(json['version'] as Map)
+        : json['publishedVersion'] is Map
+            ? Map<String, dynamic>.from(json['publishedVersion'] as Map)
+            : <String, dynamic>{};
     final content = json['content'] is Map
         ? Map<String, dynamic>.from(json['content'] as Map)
-        : <String, dynamic>{};
+        : template['content'] is Map
+            ? Map<String, dynamic>.from(template['content'] as Map)
+            : <String, dynamic>{};
     final rules = json['rules'] is Map
         ? Map<String, dynamic>.from(json['rules'] as Map)
-        : <String, dynamic>{};
+        : version['rules'] is Map
+            ? Map<String, dynamic>.from(version['rules'] as Map)
+            : template['rules'] is Map
+                ? Map<String, dynamic>.from(template['rules'] as Map)
+                : <String, dynamic>{};
     final installment = rules['installment'] is Map
         ? Map<String, dynamic>.from(rules['installment'] as Map)
         : <String, dynamic>{};
@@ -46,14 +60,26 @@ class SchemeCatalogueItem {
         ? Map<String, dynamic>.from(rules['kyc'] as Map)
         : <String, dynamic>{};
 
-    final amount = (installment['amountPaise'] as num?)?.toInt();
-    final total = (installment['totalInstallments'] as num?)?.toInt();
+    final amount = (installment['amountPaise'] as num?)?.toInt() ??
+        (json['amountPaise'] as num?)?.toInt() ??
+        (json['installmentAmountPaise'] as num?)?.toInt();
+    final total = (installment['totalInstallments'] as num?)?.toInt() ??
+        (json['totalInstallments'] as num?)?.toInt() ??
+        (json['tenureMonths'] as num?)?.toInt();
 
     return SchemeCatalogueItem(
-      templateId: json['templateId']?.toString() ?? '',
-      versionId: json['versionId']?.toString() ?? '',
-      code: json['code']?.toString() ?? '',
-      slug: json['slug']?.toString() ?? '',
+      templateId: json['templateId']?.toString() ??
+          json['id']?.toString() ??
+          template['templateId']?.toString() ??
+          template['id']?.toString() ??
+          '',
+      versionId: json['versionId']?.toString() ??
+          json['publishedVersionId']?.toString() ??
+          version['versionId']?.toString() ??
+          version['id']?.toString() ??
+          '',
+      code: json['code']?.toString() ?? template['code']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? template['slug']?.toString() ?? '',
       name: (content['name'] as String?)?.trim() ?? 'Gold Scheme',
       shortDescription: (content['shortDescription'] as String?)?.trim() ?? '',
       description: (content['description'] as String?)?.trim() ?? '',

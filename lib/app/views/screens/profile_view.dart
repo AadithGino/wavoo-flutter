@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../data/models/address.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/sheets.dart';
@@ -111,98 +112,52 @@ class ProfileView extends StatelessWidget {
           if (shop.addressesLoading.value && shop.addresses.isEmpty) {
             return const AddressCardShimmer();
           }
-          final address = shop.defaultAddress;
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.line),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (address == null) ...[
-                        Text(
-                          'No saved address',
-                          style: AppTypography.sans(
-                            size: 10,
-                            weight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Add a delivery address to place jewellery orders.',
-                          style: AppTypography.sans(
-                            size: 9,
-                            color: AppColors.muted,
-                            height: 1.45,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        PrimaryButton(
-                          label: 'ADD ADDRESS',
-                          onPressed: AppSheets.showAddressForm,
-                        ),
-                      ] else ...[
-                        Row(
-                          children: [
-                            Text(
-                              address.label,
-                              style: AppTypography.sans(
-                                size: 10,
-                                weight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            address.isDefault
-                                ? Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.goldSoft.withOpacity(.3),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      "DEFAULT",
-                                      style: AppTypography.sans(
-                                        size: 8,
-                                        weight: FontWeight.w800,
-                                        color: AppColors.goldDark,
-                                        letterSpacing: .48,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink(),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          address.user,
-                          style: AppTypography.sans(
-                            size: 10,
-                            weight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          address.lines,
-                          style: AppTypography.sans(
-                            size: 9,
-                            color: AppColors.muted,
-                            height: 1.45,
-                          ),
-                        ),
-                      ],
-                    ],
+          final addresses = shop.addresses;
+          if (addresses.isEmpty) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.line),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No saved address',
+                    style: AppTypography.sans(
+                      size: 10,
+                      weight: FontWeight.w800,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Add a delivery address to place jewellery orders.',
+                    style: AppTypography.sans(
+                      size: 8,
+                      color: AppColors.muted,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  PrimaryButton(
+                    label: 'ADD ADDRESS',
+                    onPressed: AppSheets.showAddressForm,
+                  ),
+                ],
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                for (var i = 0; i < addresses.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _ProfileAddressCard(address: addresses[i]),
+                ],
               ],
             ),
           );
@@ -248,8 +203,70 @@ class ProfileView extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: OutlinedButton(
+            onPressed: () => _confirmLogout(),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(47),
+              foregroundColor: AppColors.goldDark,
+              side: const BorderSide(color: AppColors.goldBorder),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'LOG OUT',
+              style: AppTypography.sans(
+                size: 11,
+                weight: FontWeight.w700,
+                color: AppColors.goldDark,
+              ),
+            ),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Log out?', style: AppTypography.serif(size: 20)),
+        content: Text(
+          'You will be signed out and all local data on this device will be cleared.',
+          style: AppTypography.sans(size: 12, color: AppColors.muted, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(
+              'CANCEL',
+              style: AppTypography.sans(
+                size: 11,
+                weight: FontWeight.w700,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'LOG OUT',
+              style: AppTypography.sans(
+                size: 11,
+                weight: FontWeight.w700,
+                color: AppColors.goldDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await Get.find<AuthController>().logout();
+    }
   }
 
   void _message(String value) => Get.showSnackbar(
@@ -274,6 +291,76 @@ class ProfileView extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _ProfileAddressCard extends StatelessWidget {
+  const _ProfileAddressCard({required this.address});
+
+  final Address address;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                address.label,
+                style: AppTypography.sans(size: 10, weight: FontWeight.w800),
+              ),
+              if (address.isDefault) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'DEFAULT',
+                    style: AppTypography.sans(
+                      size: 6,
+                      weight: FontWeight.w800,
+                      color: AppColors.goldDark,
+                      letterSpacing: .48,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            address.user,
+            style: AppTypography.sans(size: 9, weight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              if (address.streetLine.isNotEmpty) address.streetLine,
+              if (address.localityLine.isNotEmpty) address.localityLine,
+            ].join('\n'),
+            style: AppTypography.sans(
+              size: 8,
+              color: AppColors.muted,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProfileItem extends StatelessWidget {

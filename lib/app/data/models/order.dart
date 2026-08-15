@@ -1,3 +1,4 @@
+import '../../core/utils/media.dart';
 import 'address.dart';
 
 class OrderLine {
@@ -30,7 +31,7 @@ class OrderLine {
         lineTotalPaise: (json['lineTotalPaise'] as num?)?.toInt() ??
             (json['unitTotalPaise'] as num?)?.toInt() ??
             0,
-        image: json['productImage'] as String?,
+        image: Media.resolve(json['productImage'] as String?),
         purityLabel: json['purityLabel'] as String?,
         fulfillmentType: json['fulfillmentType'] as String?,
         lineStatus: json['lineStatus'] as String?,
@@ -71,6 +72,12 @@ class JewelleryOrder {
   /// Rupees, matching the f2501df order list contract.
   int get total => totalRupees;
 
+  String get displayNumber {
+    final number = orderNumber.trim();
+    if (number.isNotEmpty) return number;
+    return id;
+  }
+
   bool get isPendingPayment => status.toUpperCase() == 'PENDING_PAYMENT';
   bool get isConfirmed =>
       status.toUpperCase() == 'CONFIRMED' || status.toUpperCase() == 'COMPLETED';
@@ -82,6 +89,17 @@ class JewelleryOrder {
     if (status.toUpperCase() != 'CONFIRMED') return false;
     if (createdAt == null) return true;
     return DateTime.now().difference(createdAt!).inHours < 48;
+  }
+
+  String get paymentMethodLabel {
+    switch ((paymentMethod ?? '').toUpperCase()) {
+      case 'PHONEPE':
+        return 'PhonePe';
+      case 'COD':
+        return 'Cash on delivery';
+      default:
+        return paymentMethod ?? '—';
+    }
   }
 
   String get statusLabel {
@@ -137,7 +155,9 @@ class JewelleryOrder {
 
     return JewelleryOrder(
       id: id,
-      orderNumber: json['orderNumber']?.toString() ?? id,
+      orderNumber: (json['orderNumber'] as String?)?.trim().isNotEmpty == true
+          ? (json['orderNumber'] as String).trim()
+          : id,
       totalPaise: total,
       itemCount: itemCount,
       status: json['status']?.toString() ?? 'Confirmed',
