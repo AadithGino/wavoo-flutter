@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 
 import '../core/network/api_exception.dart';
 import '../core/utils/money.dart';
+import '../data/models/activity.dart';
+import '../data/models/scheme.dart';
 import '../data/repositories/profile_repository.dart';
 
 class HomeController extends GetxController {
@@ -13,6 +15,11 @@ class HomeController extends GetxController {
   final loadError = RxnString();
   final goldRatePaisePerGram = RxnInt();
   final goldRateLabel = RxnString();
+  final schemesInProgress = <SchemeEnrollment>[].obs;
+  final schemesRedeemable = <SchemeEnrollment>[].obs;
+  final schemesPastPreview = <SchemeEnrollment>[].obs;
+  final recentActivity = <CustomerActivity>[].obs;
+  final historySummary = Rxn<HistorySummary>();
 
   Future<void> load() async {
     isLoading.value = true;
@@ -22,6 +29,15 @@ class HomeController extends GetxController {
       var applied = false;
       if (home != null) {
         applied = _applyGoldRate(home['currentGoldRate']);
+        schemesInProgress.assignAll(_enrollments(home['schemesInProgress']));
+        schemesRedeemable.assignAll(_enrollments(home['schemesRedeemable']));
+        schemesPastPreview.assignAll(_enrollments(home['schemesPastPreview']));
+        recentActivity.assignAll(_activity(home['recentActivity']));
+        if (home['historySummary'] is Map) {
+          historySummary.value = HistorySummary.fromJson(
+            Map<String, dynamic>.from(home['historySummary'] as Map),
+          );
+        }
       }
       if (!applied) {
         final fallback = await _repository.fetchLatestGoldRate();
@@ -34,6 +50,34 @@ class HomeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void reset() {
+    goldRatePaisePerGram.value = null;
+    goldRateLabel.value = null;
+    loadError.value = null;
+    schemesInProgress.clear();
+    schemesRedeemable.clear();
+    schemesPastPreview.clear();
+    recentActivity.clear();
+    historySummary.value = null;
+  }
+
+  List<SchemeEnrollment> _enrollments(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => SchemeEnrollment.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.enrollmentId.isNotEmpty)
+        .toList();
+  }
+
+  List<CustomerActivity> _activity(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => CustomerActivity.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
   }
 
   bool _applyGoldRate(dynamic rate) {

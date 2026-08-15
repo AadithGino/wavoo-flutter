@@ -109,6 +109,11 @@ class SchemeEnrollment {
     this.slug,
     this.nextDueDate,
     this.maturityDate,
+    this.uiState,
+    this.canRequestRedemption = false,
+    this.redeemableBalancePaise = 0,
+    this.blockingReason,
+    this.closedAt,
     this.installments = const [],
   });
 
@@ -126,13 +131,34 @@ class SchemeEnrollment {
   final String? slug;
   final DateTime? nextDueDate;
   final DateTime? maturityDate;
+  final String? uiState;
+  final bool canRequestRedemption;
+  final int redeemableBalancePaise;
+  final String? blockingReason;
+  final DateTime? closedAt;
   final List<SchemeInstallment> installments;
 
-  bool get isActive => status == 'ACTIVE';
+  String get _status => status.toUpperCase();
+  String get _ui => (uiState ?? '').toUpperCase();
+
+  bool get isActive => _status == 'ACTIVE' || _ui == 'IN_PROGRESS';
   bool get isMatured =>
-      status == 'MATURED' || paidInstallments >= totalInstallments;
-  bool get isRedeemed =>
-      status == 'REDEEMED' || status == 'PARTIALLY_REDEEMED';
+      _status == 'MATURED' ||
+      _status == 'PARTIALLY_REDEEMED' ||
+      (totalInstallments > 0 && paidInstallments >= totalInstallments);
+  bool get isPast =>
+      _ui == 'PAST' ||
+      _status == 'REDEEMED' ||
+      _status == 'PREMATURELY_CLOSED' ||
+      _status == 'CLOSED' ||
+      _status == 'COMPLETED';
+  bool get isRedeemable =>
+      !isPast &&
+      (canRequestRedemption ||
+          _ui == 'REDEEMABLE' ||
+          _status == 'MATURED' ||
+          _status == 'PARTIALLY_REDEEMED');
+  bool get isRedeemed => _status == 'REDEEMED' || _status == 'COMPLETED';
   double get progress => totalInstallments <= 0
       ? 0
       : (paidInstallments / totalInstallments).clamp(0, 1).toDouble();
@@ -207,7 +233,70 @@ class SchemeEnrollment {
       slug: template['slug']?.toString(),
       nextDueDate: nextDue,
       maturityDate: parseDate(summary['maturityDate'] ?? summary['maturityAt']),
+      uiState: json['uiState']?.toString(),
+      canRequestRedemption: json['canRequestRedemption'] == true,
+      redeemableBalancePaise:
+          (json['redeemableBalancePaise'] as num?)?.toInt() ?? 0,
+      blockingReason: json['blockingReason']?.toString(),
+      closedAt: parseDate(json['closedAt']),
       installments: list,
+    );
+  }
+
+  factory SchemeEnrollment.fromRedemption(SchemeRedemption redemption) {
+    final completed = redemption.isCompleted;
+    return SchemeEnrollment(
+      enrollmentId: redemption.enrollmentId ?? redemption.redemptionId,
+      enrollmentNumber: redemption.enrollmentNumber ?? redemption.redemptionNumber,
+      passbookNumber: '',
+      status: completed ? 'REDEEMED' : 'MATURED',
+      joinedAt: redemption.requestedAt,
+      planName: (redemption.planName ?? '').trim().isEmpty
+          ? 'Gold Savings Plan'
+          : redemption.planName!,
+      amountPaise: 0,
+      totalInstallments: 0,
+      paidInstallments: 0,
+      uiState: completed ? 'PAST' : 'REDEEMABLE',
+      canRequestRedemption: false,
+      redeemableBalancePaise: redemption.requestedAmountPaise,
+      closedAt: completed ? (redemption.completedAt ?? redemption.requestedAt) : null,
+    );
+  }
+
+  SchemeEnrollment copyWith({
+    List<SchemeInstallment>? installments,
+    int? totalInstallments,
+    int? paidInstallments,
+    DateTime? nextDueDate,
+    DateTime? maturityDate,
+    String? status,
+    String? uiState,
+    DateTime? closedAt,
+    int? redeemableBalancePaise,
+  }) {
+    return SchemeEnrollment(
+      enrollmentId: enrollmentId,
+      enrollmentNumber: enrollmentNumber,
+      passbookNumber: passbookNumber,
+      status: status ?? this.status,
+      joinedAt: joinedAt,
+      planName: planName,
+      amountPaise: amountPaise,
+      totalInstallments: totalInstallments ?? this.totalInstallments,
+      paidInstallments: paidInstallments ?? this.paidInstallments,
+      templateId: templateId,
+      versionId: versionId,
+      slug: slug,
+      nextDueDate: nextDueDate ?? this.nextDueDate,
+      maturityDate: maturityDate ?? this.maturityDate,
+      uiState: uiState ?? this.uiState,
+      canRequestRedemption: canRequestRedemption,
+      redeemableBalancePaise:
+          redeemableBalancePaise ?? this.redeemableBalancePaise,
+      blockingReason: blockingReason,
+      closedAt: closedAt ?? this.closedAt,
+      installments: installments ?? this.installments,
     );
   }
 }
@@ -389,6 +478,10 @@ class SchemeRedemption {
     required this.mode,
     required this.requestedAmountPaise,
     this.requestedAt,
+    this.completedAt,
+    this.enrollmentId,
+    this.enrollmentNumber,
+    this.planName,
   });
 
   final String redemptionId;
@@ -397,6 +490,10 @@ class SchemeRedemption {
   final String mode;
   final int requestedAmountPaise;
   final DateTime? requestedAt;
+  final DateTime? completedAt;
+  final String? enrollmentId;
+  final String? enrollmentNumber;
+  final String? planName;
 
   bool get isOpen {
     const open = {
@@ -408,20 +505,43 @@ class SchemeRedemption {
     return open.contains(status.toUpperCase());
   }
 
+  bool get isCompleted {
+    const done = {'COMPLETED', 'SETTLED', 'FULFILLED', 'CLOSED', 'REDEEMED'};
+    return done.contains(status.toUpperCase());
+  }
+
   factory SchemeRedemption.fromJson(Map<String, dynamic> json) {
     final nested = json['redemption'];
     final map = nested is Map
         ? Map<String, dynamic>.from(nested)
         : json;
+    DateTime? parseDate(dynamic value) {
+      if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+      return null;
+    }
+
+    String? planName = map['planName']?.toString();
+    if (planName == null || planName.isEmpty) {
+      final template = map['template'];
+      if (template is Map && template['content'] is Map) {
+        planName = Map<String, dynamic>.from(template['content'] as Map)['name']
+            ?.toString();
+      }
+    }
+
     return SchemeRedemption(
       redemptionId: map['redemptionId']?.toString() ?? map['id']?.toString() ?? '',
       redemptionNumber: map['redemptionNumber']?.toString() ?? '',
       status: map['status']?.toString() ?? 'REQUESTED',
       mode: map['mode']?.toString() ?? 'FULL',
-      requestedAmountPaise: (map['requestedAmountPaise'] as num?)?.toInt() ?? 0,
-      requestedAt: map['requestedAt'] is String
-          ? DateTime.tryParse(map['requestedAt'] as String)
-          : null,
+      requestedAmountPaise: (map['requestedAmountPaise'] as num?)?.toInt() ??
+          (map['amountPaise'] as num?)?.toInt() ??
+          0,
+      requestedAt: parseDate(map['requestedAt']),
+      completedAt: parseDate(map['completedAt']),
+      enrollmentId: map['enrollmentId']?.toString(),
+      enrollmentNumber: map['enrollmentNumber']?.toString(),
+      planName: planName,
     );
   }
 }

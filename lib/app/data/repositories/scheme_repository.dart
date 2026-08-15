@@ -24,46 +24,106 @@ class SchemeRepository {
     return items;
   }
 
-  Future<List<SchemeEnrollment>> fetchEnrollments() async {
-    final data = await _client.get<dynamic>('/customer/scheme-enrollments');
+  Future<List<SchemeEnrollment>> fetchEnrollments({
+    String? lifecycle,
+    String? status,
+    int page = 1,
+    int limit = 20,
+    bool allPages = false,
+  }) async {
+    final first = await _fetchEnrollmentPage(
+      lifecycle: lifecycle,
+      status: status,
+      page: page,
+      limit: limit,
+    );
+    final items = [...first.items];
+    if (!allPages || first.totalPages <= 1) return items;
+    for (var next = page + 1; next <= first.totalPages; next++) {
+      final extra = await _fetchEnrollmentPage(
+        lifecycle: lifecycle,
+        status: status,
+        page: next,
+        limit: limit,
+      );
+      items.addAll(extra.items);
+    }
+    return items;
+  }
+
+  Future<List<SchemeEnrollment>> fetchCustomerSchemes() async {
+    final chunks = await Future.wait([
+      _fetchLifecycle('all'),
+      _fetchLifecycle('past'),
+      _fetchLifecycle('redeemable'),
+    ]);
+    return _mergeEnrollments([
+      ...chunks[0],
+      ...chunks[1],
+      ...chunks[2],
+    ]);
+  }
+
+  Future<List<SchemeEnrollment>> _fetchLifecycle(String lifecycle) async {
+    try {
+      return await fetchEnrollments(lifecycle: lifecycle, allPages: true);
+    } catch (_) {
+      if (lifecycle == 'all') {
+        try {
+          return await fetchEnrollments(allPages: true);
+        } catch (_) {
+          return const [];
+        }
+      }
+      return const [];
+    }
+  }
+
+  Future<_EnrollmentPage> _fetchEnrollmentPage({
+    String? lifecycle,
+    String? status,
+    required int page,
+    required int limit,
+  }) async {
+    final data = await _client.get<dynamic>(
+      '/customer/scheme-enrollments',
+      query: {
+        if (lifecycle != null && lifecycle.isNotEmpty) 'lifecycle': lifecycle,
+        if (status != null && status.isNotEmpty) 'status': status,
+        'page': page,
+        'limit': limit,
+      },
+    );
     final list = _asList(data);
     final enrollments = <SchemeEnrollment>[];
     for (final item in list.whereType<Map>()) {
-      var enrollment =
+      final enrollment =
           SchemeEnrollment.fromJson(Map<String, dynamic>.from(item));
-      if (enrollment.installments.isEmpty && enrollment.enrollmentId.isNotEmpty) {
-        try {
-          final cycles = await fetchInstallments(enrollment.enrollmentId);
-          enrollment = SchemeEnrollment(
-            enrollmentId: enrollment.enrollmentId,
-            enrollmentNumber: enrollment.enrollmentNumber,
-            passbookNumber: enrollment.passbookNumber,
-            status: enrollment.status,
-            joinedAt: enrollment.joinedAt,
-            planName: enrollment.planName,
-            amountPaise: enrollment.amountPaise,
-            totalInstallments: enrollment.totalInstallments > 0
-                ? enrollment.totalInstallments
-                : cycles.length,
-            paidInstallments: cycles.where((c) => c.isPaid).length,
-            templateId: enrollment.templateId,
-            versionId: enrollment.versionId,
-            slug: enrollment.slug,
-            nextDueDate: cycles
-                .where((c) => !c.isPaid)
-                .map((c) => c.dueDate)
-                .whereType<DateTime>()
-                .cast<DateTime?>()
-                .followedBy([null])
-                .first,
-            maturityDate: enrollment.maturityDate,
-            installments: cycles,
-          );
-        } catch (_) {}
+      if (enrollment.enrollmentId.isNotEmpty) {
+        enrollments.add(enrollment);
       }
-      enrollments.add(enrollment);
     }
-    return enrollments;
+    var totalPages = 1;
+    if (data is Map) {
+      totalPages = (data['totalPages'] as num?)?.toInt() ?? 1;
+      final total = (data['total'] as num?)?.toInt();
+      if (total != null && total > enrollments.length && totalPages <= 1) {
+        totalPages = (total / limit).ceil();
+      }
+    }
+    return _EnrollmentPage(items: enrollments, totalPages: totalPages);
+  }
+
+  List<SchemeEnrollment> _mergeEnrollments(List<SchemeEnrollment> items) {
+    final byId = <String, SchemeEnrollment>{};
+    for (final item in items) {
+      if (item.enrollmentId.isEmpty) continue;
+      final existing = byId[item.enrollmentId];
+      if (existing == null || item.isPast) {
+        byId[item.enrollmentId] = item;
+      }
+    }
+    return byId.values.toList();
   }
 
   Future<List<SchemeInstallment>> fetchInstallments(String enrollmentId) async {
@@ -161,17 +221,17 @@ class SchemeRepository {
     return SchemeRedemption.fromJson(data);
   }
 
-  Future<List<SchemeRedemption>> fetchRedemptions(String enrollmentId) async {
+  Future<List<SchemeRedemption>> fetchRedemptions({String? enrollmentId}) async {
     final data = await _client.get<dynamic>(
       '/customer/scheme-redemptions',
-      query: {'enrollmentId': enrollmentId},
+      query: {
+        if (enrollmentId != null && enrollmentId.isNotEmpty)
+          'enrollmentId': enrollmentId,
+        'page': 1,
+        'limit': 50,
+      },
     );
-    final list = data is List
-        ? data
-        : (data is Map && data['items'] is List)
-            ? data['items'] as List
-            : const [];
-    return list
+    return _asList(data)
         .whereType<Map>()
         .map((item) => SchemeRedemption.fromJson(Map<String, dynamic>.from(item)))
         .toList();
@@ -187,6 +247,7 @@ class SchemeRepository {
         'schemes',
         'templates',
         'published',
+        'redemptions',
         'results',
       ]) {
         final nested = data[key];
@@ -200,4 +261,11 @@ class SchemeRepository {
     }
     return const [];
   }
+}
+
+class _EnrollmentPage {
+  const _EnrollmentPage({required this.items, required this.totalPages});
+
+  final List<SchemeEnrollment> items;
+  final int totalPages;
 }

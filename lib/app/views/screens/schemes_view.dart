@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../controllers/scheme_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/money.dart';
 import '../../data/models/scheme.dart';
+import '../widgets/history_sheets.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/sheets.dart';
 import '../widgets/shimmers.dart';
 
-class SchemesView extends StatelessWidget {
+class SchemesView extends StatefulWidget {
   const SchemesView({super.key});
+
+  @override
+  State<SchemesView> createState() => _SchemesViewState();
+}
+
+class _SchemesViewState extends State<SchemesView> {
+  bool _mineTab = true;
 
   @override
   Widget build(BuildContext context) {
@@ -27,42 +37,48 @@ class SchemesView extends StatelessWidget {
           if (scheme.isLoading.value) {
             return const SchemePageShimmer();
           }
-          scheme.paymentBusy.value;
-          final plans = scheme.enrollments.toList();
-          final available = scheme.catalogue.toList();
+          final home = Get.isRegistered<HomeController>()
+              ? Get.find<HomeController>()
+              : null;
+          home?.schemesPastPreview.length;
+          final current = scheme.enrollments
+              .where((item) => !item.isPast)
+              .toList()
+            ..sort((a, b) {
+              final aReady = a.isRedeemable ? 1 : 0;
+              final bReady = b.isRedeemable ? 1 : 0;
+              return bReady.compareTo(aReady);
+            });
+          final past = _uniqueEnrollments([
+            ...scheme.enrollments.where((item) => item.isPast),
+            ...?home?.schemesPastPreview,
+          ])
+            ..sort((a, b) {
+              final aDate = a.closedAt ?? a.maturityDate ?? a.joinedAt;
+              final bDate = b.closedAt ?? b.maturityDate ?? b.joinedAt;
+              if (aDate == null && bDate == null) return 0;
+              if (aDate == null) return 1;
+              if (bDate == null) return -1;
+              return bDate.compareTo(aDate);
+            });
           return Column(
             children: [
-              if (plans.isNotEmpty) ...[
-                _SectionHeader(
-                  title: plans.length == 1 ? 'My plan' : 'My plans',
-                  action: 'View details',
-                  onTap: () {
-                    scheme.selectEnrollment(plans.first);
-                    AppSheets.showSchemeDetails();
-                  },
-                ),
-                for (var i = 0; i < plans.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _PlanCard(
-                    scheme: scheme,
-                    enrollment: plans[i],
-                    compact: plans.length > 1,
-                  ),
-                ],
-                const SizedBox(height: 18),
-              ],
-              _SectionHeader(
-                title: available.length > 1
-                    ? 'Available schemes'
-                    : 'Enroll in a scheme',
+              _SchemeTabs(
+                mineSelected: _mineTab,
+                currentCount: current.length,
+                onMine: () => setState(() => _mineTab = true),
+                onNew: () => setState(() => _mineTab = false),
               ),
-              if (available.isEmpty)
-                _EnrollmentCard(scheme: scheme)
+              const SizedBox(height: 16),
+              if (_mineTab)
+                _MineSchemesTab(
+                  scheme: scheme,
+                  current: current,
+                  past: past,
+                  onStartNew: () => setState(() => _mineTab = false),
+                )
               else
-                for (var i = 0; i < available.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _CatalogueCard(scheme: scheme, item: available[i]),
-                ],
+                const _StartNewTab(),
             ],
           );
         }),
@@ -71,12 +87,186 @@ class SchemesView extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.action, this.onTap});
+List<SchemeEnrollment> _uniqueEnrollments(List<SchemeEnrollment> items) {
+  final byId = <String, SchemeEnrollment>{};
+  for (final item in items) {
+    if (item.enrollmentId.isEmpty) continue;
+    byId.putIfAbsent(item.enrollmentId, () => item);
+  }
+  return byId.values.toList();
+}
+
+class _SchemeTabs extends StatelessWidget {
+  const _SchemeTabs({
+    required this.mineSelected,
+    required this.currentCount,
+    required this.onMine,
+    required this.onNew,
+  });
+
+  final bool mineSelected;
+  final int currentCount;
+  final VoidCallback onMine;
+  final VoidCallback onNew;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F0E7),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TabButton(
+              label: 'MY SCHEMES · $currentCount',
+              selected: mineSelected,
+              onTap: onMine,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _TabButton(
+              label: 'START NEW',
+              selected: !mineSelected,
+              onTap: onNew,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  const _TabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x1755370F),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: AppTypography.sans(
+            size: 8,
+            weight: FontWeight.w800,
+            color: selected ? AppColors.goldDark : AppColors.muted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MineSchemesTab extends StatelessWidget {
+  const _MineSchemesTab({
+    required this.scheme,
+    required this.current,
+    required this.past,
+    required this.onStartNew,
+  });
+
+  final SchemeController scheme;
+  final List<SchemeEnrollment> current;
+  final List<SchemeEnrollment> past;
+  final VoidCallback onStartNew;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _SectionHead(
+          title: 'Current schemes',
+          trailing: _StatusBadge(
+            label: '${current.length} plan${current.length == 1 ? '' : 's'}',
+            kind: _BadgeKind.active,
+          ),
+        ),
+        if (current.isEmpty)
+          const _EmptyNote(text: 'No active or redeemable schemes.')
+        else
+          for (var i = 0; i < current.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _CurrentSchemeCard(scheme: scheme, enrollment: current[i]),
+          ],
+        const SizedBox(height: 18),
+        _SectionHead(
+          title: 'Past schemes',
+          action: past.isEmpty ? null : 'View all →',
+          onAction: past.isEmpty ? null : showPastSchemesSheet,
+        ),
+        if (past.isEmpty)
+          const _EmptyNote(text: 'Completed schemes will appear here.')
+        else
+          for (var i = 0; i < past.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _PastPreviewCard(enrollment: past[i]),
+          ],
+        const SizedBox(height: 12),
+        _StartAnotherPrompt(onStartNew: onStartNew),
+      ],
+    );
+  }
+}
+
+class _StartNewTab extends StatelessWidget {
+  const _StartNewTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _EnrollHero(onChoose: AppSheets.showSchemeEnrollment),
+        const SizedBox(height: 10),
+        const _EmptyNote(
+          text:
+              'Starting a new scheme does not replace or merge any existing plan.',
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionHead extends StatelessWidget {
+  const _SectionHead({
+    required this.title,
+    this.trailing,
+    this.action,
+    this.onAction,
+  });
 
   final String title;
+  final Widget? trailing;
   final String? action;
-  final VoidCallback? onTap;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -85,23 +275,23 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(title, style: AppTypography.serif(size: 18))),
+          if (trailing != null) trailing!,
           if (action != null)
-            TextButton.icon(
-              onPressed: onTap,
+            TextButton(
+              onPressed: onAction,
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(0, 26),
                 foregroundColor: AppColors.goldDark,
               ),
-              label: Text(
+              child: Text(
                 action!,
                 style: AppTypography.sans(
-                  size: 9,
+                  size: 8,
                   weight: FontWeight.w700,
                   color: AppColors.goldDark,
                 ),
               ),
-              icon: const Icon(Icons.arrow_forward, size: 13),
             ),
         ],
       ),
@@ -109,39 +299,36 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({
+class _CurrentSchemeCard extends StatelessWidget {
+  const _CurrentSchemeCard({
     required this.scheme,
     required this.enrollment,
-    this.compact = false,
   });
 
   final SchemeController scheme;
   final SchemeEnrollment enrollment;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final redeemed = enrollment.isRedeemed;
-    final matured = enrollment.isMatured;
-    final upcoming = compact
-        ? const <SchemePayment>[]
-        : scheme.upcomingFor(enrollment).take(4).toList();
-    final statusLabel = redeemed
-        ? 'REDEEMED'
-        : matured
-            ? 'MATURED'
-            : 'ACTIVE';
+    final redeemable = enrollment.isRedeemable;
+    final progress = (enrollment.progress * 100).round().clamp(0, 100);
+    final saved = enrollment.redeemableBalancePaise > 0
+        ? enrollment.redeemableBalancePaise
+        : enrollment.savedPaise;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.ivory, AppColors.pageCard],
+          colors: redeemable
+              ? const [Color(0xFFFFF9ED), Color(0xFFF5E3C2)]
+              : const [AppColors.ivory, AppColors.pageCard],
         ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.goldBorder),
+        border: Border.all(
+          color: redeemable ? const Color(0xFFD6AF69) : AppColors.goldBorder,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x128B5A14),
@@ -161,13 +348,9 @@ class _PlanCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      redeemed
-                          ? 'REDEEMED PLAN'
-                          : matured
-                              ? 'MATURED PLAN'
-                              : 'ACTIVE PLAN',
+                      redeemable ? 'REDEMPTION AVAILABLE' : 'MONTHLY PLAN',
                       style: AppTypography.sans(
-                        size: 9,
+                        size: 7,
                         weight: FontWeight.w800,
                         color: AppColors.goldDark,
                         letterSpacing: .84,
@@ -178,25 +361,22 @@ class _PlanCard extends StatelessWidget {
                       enrollment.planName,
                       style: AppTypography.serif(size: 20, height: 1.05),
                     ),
+                    if (enrollment.enrollmentNumber.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        enrollment.enrollmentNumber,
+                        style: AppTypography.sans(
+                          size: 7,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(.1),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: AppColors.goldBorder),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: AppTypography.sans(
-                    size: 9,
-                    weight: FontWeight.w800,
-                    color: AppColors.goldDark,
-                    letterSpacing: .56,
-                  ),
-                ),
+              _StatusBadge(
+                label: redeemable ? 'Redeemable' : 'In progress',
+                kind: redeemable ? _BadgeKind.redeemable : _BadgeKind.active,
               ),
             ],
           ),
@@ -204,14 +384,14 @@ class _PlanCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _StatCard(
-                  label: 'Saved so far',
-                  value: scheme.moneyPaise(enrollment.savedPaise),
+                child: _StatBox(
+                  label: redeemable ? 'Maturity value' : 'Saved so far',
+                  value: Money.fromPaise(saved),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _StatCard(
+                child: _StatBox(
                   label: 'Instalments',
                   value:
                       '${enrollment.paidInstallments}/${enrollment.totalInstallments}',
@@ -219,9 +399,13 @@ class _PlanCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _StatCard(
-                  label: 'Maturity',
-                  value: scheme.dateLabel(enrollment.maturityDate),
+                child: _StatBox(
+                  label: redeemable ? 'Matured on' : 'Next due',
+                  value: scheme.dateLabel(
+                    redeemable
+                        ? enrollment.maturityDate
+                        : enrollment.nextDueDate,
+                  ),
                 ),
               ),
             ],
@@ -231,11 +415,11 @@ class _PlanCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Plan progress',
+                redeemable ? 'Plan completed' : 'Plan progress',
                 style: AppTypography.sans(size: 8, color: AppColors.muted),
               ),
               Text(
-                '${(enrollment.progress * 100).round()}%',
+                '$progress%',
                 style: AppTypography.sans(
                   size: 8,
                   weight: FontWeight.w800,
@@ -254,85 +438,38 @@ class _PlanCard extends StatelessWidget {
               backgroundColor: AppColors.line,
             ),
           ),
-          if (!matured && !redeemed && upcoming.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              'Upcoming payments',
-              style: AppTypography.serif(size: 18),
-            ),
-            const SizedBox(height: 9),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: AppColors.line),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  for (var index = 0; index < upcoming.length; index++)
-                    _PaymentRow(
-                      payment: upcoming[index],
-                      showDivider: index != upcoming.length - 1,
-                      onPay: upcoming[index].isNext
-                          ? () {
-                              scheme.selectEnrollment(enrollment);
-                              AppSheets.showSchemePayment();
-                            }
-                          : null,
-                    ),
-                ],
-              ),
-            ),
-          ],
+          const SizedBox(height: 12),
+          _EmptyNote(
+            text: redeemable
+                ? 'All instalments are complete. Your savings are ready for redemption.'
+                : 'Next instalment: ${Money.fromPaise(enrollment.amountPaise)} due ${scheme.dateLabel(enrollment.nextDueDate)}.',
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: _SecondaryButton(
+                  label: 'View details',
                   onPressed: () {
                     scheme.selectEnrollment(enrollment);
                     AppSheets.showSchemeDetails();
                   },
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 36),
-                    side: const BorderSide(color: Color(0xFFE6DAC9)),
-                    foregroundColor: AppColors.goldDark,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: AppTypography.sans(
-                      size: 8,
-                      weight: FontWeight.w700,
-                    ),
-                  ),
-                  child: const Text(
-                    'Full schedule',
-                    style: TextStyle(fontSize: 10),
-                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FilledButton(
+                child: _PrimaryButton(
+                  label: redeemable
+                      ? 'Redeem now'
+                      : 'Pay ${Money.fromPaise(enrollment.amountPaise)}',
                   onPressed: () {
                     scheme.selectEnrollment(enrollment);
-                    if (matured) {
+                    if (redeemable) {
                       AppSheets.showRedemption();
                     } else {
                       AppSheets.showSchemePayment();
                     }
                   },
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 36),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    matured ? 'Redeem now' : 'Pay next',
-                    style: const TextStyle(fontSize: 10),
-                  ),
                 ),
               ),
             ],
@@ -343,238 +480,73 @@ class _PlanCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value});
+class _PastPreviewCard extends StatelessWidget {
+  const _PastPreviewCard({required this.enrollment});
 
-  final String label;
-  final String value;
+  final SchemeEnrollment enrollment;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 58),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTypography.sans(size: 9, color: AppColors.muted),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.sans(size: 10, weight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaymentRow extends StatelessWidget {
-  const _PaymentRow({
-    required this.payment,
-    required this.showDivider,
-    this.onPay,
-  });
-
-  final SchemePayment payment;
-  final bool showDivider;
-  final VoidCallback? onPay;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Get.find<SchemeController>();
-    return Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: payment.isNext ? AppColors.cream : AppColors.ivory,
-        border: showDivider
-            ? const Border(bottom: BorderSide(color: AppColors.line))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: payment.isNext ? AppColors.gold : const Color(0xFFFFF7E8),
-              shape: BoxShape.circle,
-              boxShadow: payment.isNext
-                  ? [
-                      BoxShadow(
-                        color: AppColors.gold.withOpacity(.14),
-                        spreadRadius: 3,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Text(
-              payment.isNext ? '●' : '${payment.installment}',
-              style: AppTypography.sans(
-                size: 10,
-                weight: FontWeight.w800,
-                color: payment.isNext ? Colors.white : AppColors.goldDark,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Instalment ${payment.installment}${payment.isNext ? ' · Due next' : ''}',
-                  style: AppTypography.sans(
-                    size: 10,
-                    weight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${scheme.dateLabel(payment.date)} · ${scheme.money(payment.amount)}',
-                  style: AppTypography.sans(
-                    size: 10,
-                    color: AppColors.muted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (onPay != null)
-            SizedBox(
-              height: 28,
-              child: FilledButton(
-                onPressed: onPay,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                child: const Text('PAY'),
-              ),
-            )
-          else
-            Text(
-              scheme.money(payment.amount),
-              style: AppTypography.sans(
-                size: 10,
-                weight: FontWeight.w700,
-                color: AppColors.goldDark,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CatalogueCard extends StatelessWidget {
-  const _CatalogueCard({required this.scheme, required this.item});
-
-  final SchemeController scheme;
-  final SchemeCatalogueItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final busy = scheme.paymentBusy.value &&
-        scheme.selectedCatalogueItem.value?.templateId == item.templateId;
-    final description = item.shortDescription.isNotEmpty
-        ? item.shortDescription
-        : item.description;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.goldBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F8B5A14),
-            blurRadius: 22,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  item.isFeatured ? 'FEATURED SCHEME' : 'GOLD SCHEME',
-                  style: AppTypography.sans(
-                    size: 9,
-                    weight: FontWeight.w800,
-                    color: AppColors.goldDark,
-                    letterSpacing: .84,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      enrollment.enrollmentNumber.isEmpty
+                          ? enrollment.passbookNumber
+                          : enrollment.enrollmentNumber,
+                      style: AppTypography.sans(
+                        size: 7,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      enrollment.planName,
+                      style: AppTypography.serif(size: 17, height: 1.1),
+                    ),
+                  ],
                 ),
               ),
-              if (item.totalInstallments > 0)
-                Text(
-                  '${item.totalInstallments} months',
-                  style: AppTypography.sans(
-                    size: 9,
-                    weight: FontWeight.w700,
-                    color: AppColors.muted,
-                  ),
-                ),
+              const _StatusBadge(
+                label: 'Redeemed',
+                kind: _BadgeKind.redeemed,
+              ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(item.name, style: AppTypography.serif(size: 20, height: 1.05)),
-          if (description.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              description,
-              style: AppTypography.sans(
-                size: 9,
-                color: AppColors.muted,
-                height: 1.45,
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _StatCard(
-                  label: 'Monthly',
-                  value: item.amountPaise > 0
-                      ? scheme.moneyPaise(item.amountPaise)
-                      : '—',
+                child: _SoftMeta(
+                  label: 'Final value',
+                  value: Money.fromPaise(
+                    enrollment.redeemableBalancePaise > 0
+                        ? enrollment.redeemableBalancePaise
+                        : enrollment.savedPaise,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 7),
               Expanded(
-                child: _StatCard(
-                  label: 'Tenure',
-                  value: item.totalInstallments > 0
-                      ? '${item.totalInstallments} months'
-                      : '—',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatCard(
-                  label: 'Goal',
-                  value: item.goalPaise > 0
-                      ? scheme.moneyPaise(item.goalPaise)
-                      : '—',
+                child: _SoftMeta(
+                  label: 'Redeemed',
+                  value: Get.find<SchemeController>().dateLabel(
+                    enrollment.closedAt ?? enrollment.maturityDate,
+                  ),
                 ),
               ),
             ],
@@ -582,28 +554,12 @@ class _CatalogueCard extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            height: 44,
-            child: FilledButton(
-              onPressed: busy || item.versionId.isEmpty
-                  ? null
-                  : () => scheme.joinCatalogueItem(item),
-              child: busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      'ENROLL',
-                      style: AppTypography.sans(
-                        size: 11,
-                        weight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+            child: _SecondaryButton(
+              label: 'View completed plan',
+              onPressed: () {
+                Get.find<SchemeController>().selectEnrollment(enrollment);
+                AppSheets.showSchemeDetails();
+              },
             ),
           ),
         ],
@@ -612,10 +568,75 @@ class _CatalogueCard extends StatelessWidget {
   }
 }
 
-class _EnrollmentCard extends StatelessWidget {
-  const _EnrollmentCard({required this.scheme});
+class _StartAnotherPrompt extends StatelessWidget {
+  const _StartAnotherPrompt({required this.onStartNew});
 
-  final SchemeController scheme;
+  final VoidCallback onStartNew;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFAF1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFD8BD91),
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Saving for another goal?',
+                  style: AppTypography.serif(size: 15, height: 1.1),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Create another scheme without affecting your current plans.',
+                  style: AppTypography.sans(
+                    size: 7,
+                    color: AppColors.muted,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton(
+            onPressed: onStartNew,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 11),
+              backgroundColor: AppColors.gold,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(7),
+              ),
+            ),
+            child: Text(
+              'START NEW',
+              style: AppTypography.sans(
+                size: 7,
+                weight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnrollHero extends StatelessWidget {
+  const _EnrollHero({required this.onChoose});
+
+  final VoidCallback onChoose;
 
   @override
   Widget build(BuildContext context) {
@@ -665,17 +686,17 @@ class _EnrollmentCard extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -18),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Start a new gold plan',
+                    'Start another gold plan',
                     style: AppTypography.serif(size: 22, height: 1.05),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Choose a monthly contribution, pay on schedule, and redeem your savings for fine jewellery at maturity.',
+                    'Each scheme stays separate with its own instalments, maturity date, payment history and redemption record.',
                     style: AppTypography.sans(
                       size: 9,
                       color: AppColors.muted,
@@ -686,24 +707,15 @@ class _EnrollmentCard extends StatelessWidget {
                   const Row(
                     children: [
                       Expanded(
-                        child: _EnrollmentBenefit(
-                          value: '11',
-                          label: 'Month plans',
-                        ),
+                        child: _Benefit(value: '11', label: 'Month plans'),
                       ),
                       SizedBox(width: 6),
                       Expanded(
-                        child: _EnrollmentBenefit(
-                          value: '₹5K+',
-                          label: 'Monthly from',
-                        ),
+                        child: _Benefit(value: '₹1K+', label: 'Monthly from'),
                       ),
                       SizedBox(width: 6),
                       Expanded(
-                        child: _EnrollmentBenefit(
-                          value: '0%',
-                          label: 'Making charge bonus',
-                        ),
+                        child: _Benefit(value: 'Multi', label: 'Plans supported'),
                       ),
                     ],
                   ),
@@ -712,11 +724,9 @@ class _EnrollmentCard extends StatelessWidget {
                     width: double.infinity,
                     height: 47,
                     child: FilledButton(
-                      onPressed: AppSheets.showSchemeEnrollment,
+                      onPressed: onChoose,
                       child: Text(
-                        scheme.hasJoined.value
-                            ? 'ENROLL IN ANOTHER PLAN'
-                            : 'ENROLL NOW',
+                        'CHOOSE A SCHEME',
                         style: AppTypography.sans(
                           size: 11,
                           weight: FontWeight.w700,
@@ -735,8 +745,156 @@ class _EnrollmentCard extends StatelessWidget {
   }
 }
 
-class _EnrollmentBenefit extends StatelessWidget {
-  const _EnrollmentBenefit({required this.value, required this.label});
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFC48A27), Color(0xFF9E6106)],
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: Text(
+                label,
+                style: AppTypography.sans(
+                  size: 8,
+                  weight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: .24,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  const _SecondaryButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.goldDark,
+          side: const BorderSide(color: Color(0xFFE6DAC9)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.sans(
+            size: 8,
+            weight: FontWeight.w700,
+            color: AppColors.goldDark,
+            letterSpacing: .24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTypography.sans(size: 7, color: AppColors.muted),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.sans(size: 10, weight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SoftMeta extends StatelessWidget {
+  const _SoftMeta({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F4EE),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTypography.sans(size: 6, color: AppColors.muted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.sans(
+              size: 9,
+              weight: FontWeight.w700,
+              color: AppColors.goldDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Benefit extends StatelessWidget {
+  const _Benefit({required this.value, required this.label});
 
   final String value;
   final String label;
@@ -746,7 +904,7 @@ class _EnrollmentBenefit extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.72),
+        color: Colors.white.withValues(alpha: .72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFEADFCE)),
       ),
@@ -761,12 +919,80 @@ class _EnrollmentBenefit extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: AppTypography.sans(
-              size: 8,
+              size: 6,
               color: AppColors.muted,
               height: 1.2,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyNote extends StatelessWidget {
+  const _EmptyNote({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: AppTypography.sans(
+          size: 9,
+          color: AppColors.muted,
+          height: 1.45,
+        ),
+      ),
+    );
+  }
+}
+
+enum _BadgeKind { active, redeemable, redeemed }
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.kind});
+
+  final String label;
+  final _BadgeKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    late Color background;
+    late Color color;
+    switch (kind) {
+      case _BadgeKind.active:
+        background = const Color(0xFFE8F5EC);
+        color = const Color(0xFF27713C);
+      case _BadgeKind.redeemable:
+        background = const Color(0xFFFFF0CF);
+        color = const Color(0xFF9B5E00);
+      case _BadgeKind.redeemed:
+        background = const Color(0xFFEEE9E0);
+        color = const Color(0xFF665C4C);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTypography.sans(
+          size: 6,
+          weight: FontWeight.w900,
+          color: color,
+          letterSpacing: .48,
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../core/network/api_exception.dart';
 import '../core/utils/money.dart';
 import '../data/models/scheme.dart';
 import '../data/repositories/scheme_repository.dart';
+import 'home_controller.dart';
 
 class SchemePayment {
   const SchemePayment({
@@ -67,8 +68,12 @@ class SchemeController extends GetxController {
   }
 
   void selectEnrollment(SchemeEnrollment enrollment) {
+    if (enrollmentById(enrollment.enrollmentId) == null) {
+      enrollments.add(enrollment);
+    }
     selectedEnrollmentId.value = enrollment.enrollmentId;
     _syncUiFromApi();
+    unawaited(_hydrateInstallments(enrollment.enrollmentId));
   }
 
   String get planName =>
@@ -163,9 +168,9 @@ class SchemeController extends GetxController {
     unawaited(_joinScheme());
   }
 
-  void redeem([String method = 'Showroom redemption']) {
+  Future<SchemeRedemption?> redeem([String method = 'Showroom redemption']) {
     redemptionMethod.value = method;
-    unawaited(requestRedemption());
+    return requestRedemption();
   }
 
   Future<void> load() async {
@@ -174,10 +179,20 @@ class SchemeController extends GetxController {
     try {
       final results = await Future.wait([
         _repository.fetchCatalogue(),
-        _repository.fetchEnrollments(),
+        _repository.fetchCustomerSchemes(),
+        _repository.fetchRedemptions(),
       ]);
       catalogue.assignAll(results[0] as List<SchemeCatalogueItem>);
-      enrollments.assignAll(results[1] as List<SchemeEnrollment>);
+      var merged = _mergeEnrollments([
+        ...results[1] as List<SchemeEnrollment>,
+        if (Get.isRegistered<HomeController>())
+          ...Get.find<HomeController>().schemesPastPreview,
+      ]);
+      merged = _applyRedemptions(
+        merged,
+        results[2] as List<SchemeRedemption>,
+      );
+      enrollments.assignAll(merged);
       if (selectedEnrollmentId.value.isNotEmpty &&
           enrollmentById(selectedEnrollmentId.value) == null) {
         selectedEnrollmentId.value = '';
@@ -187,7 +202,10 @@ class SchemeController extends GetxController {
       }
       final enrollment = activeEnrollment;
       if (enrollment != null) {
-        await _refreshRedemption(enrollment.enrollmentId);
+        await Future.wait([
+          _refreshRedemption(enrollment.enrollmentId),
+          _hydrateInstallments(enrollment.enrollmentId),
+        ]);
       }
       _syncUiFromApi();
     } on ApiException catch (e) {
@@ -346,18 +364,14 @@ class SchemeController extends GetxController {
       final intent = await _repository.initiatePhonePeWeb(enrollment.enrollmentId);
       lastIntent.value = intent;
 
-      if (Get.isBottomSheetOpen == true) {
-        Get.back<void>();
-      }
-
-      if (intent.isSuccess) {
+      final url = intent.checkoutUrl;
+      if (intent.isSuccess && (url == null || url.isEmpty)) {
         paymentStatus.value = 'Payment successful';
         await load();
         _notify('Monthly instalment paid successfully');
         return intent;
       }
 
-      final url = intent.checkoutUrl;
       if (url != null && url.isNotEmpty) {
         final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
@@ -421,7 +435,7 @@ class SchemeController extends GetxController {
   Future<void> _refreshRedemption(String enrollmentId) async {
     try {
       eligibility.value = await _repository.redemptionEligibility(enrollmentId);
-      final rows = await _repository.fetchRedemptions(enrollmentId);
+      final rows = await _repository.fetchRedemptions(enrollmentId: enrollmentId);
       lastRedemption.value = rows.isEmpty ? null : rows.first;
       final open = lastRedemption.value;
       isRedeemed.value = open != null &&
@@ -439,6 +453,79 @@ class SchemeController extends GetxController {
       if (item.enrollmentId == id) return item;
     }
     return null;
+  }
+
+  List<SchemeEnrollment> _mergeEnrollments(List<SchemeEnrollment> items) {
+    final byId = <String, SchemeEnrollment>{};
+    for (final item in items) {
+      if (item.enrollmentId.isEmpty) continue;
+      final existing = byId[item.enrollmentId];
+      if (existing == null || (item.isPast && !existing.isPast)) {
+        byId[item.enrollmentId] = item;
+      }
+    }
+    return byId.values.toList();
+  }
+
+  List<SchemeEnrollment> _applyRedemptions(
+    List<SchemeEnrollment> items,
+    List<SchemeRedemption> redemptions,
+  ) {
+    final byId = {
+      for (final item in items)
+        if (item.enrollmentId.isNotEmpty) item.enrollmentId: item,
+    };
+    for (final redemption in redemptions) {
+      final id = (redemption.enrollmentId ?? '').trim();
+      final fallbackId = id.isEmpty ? redemption.redemptionId : id;
+      if (fallbackId.isEmpty) continue;
+      final existing = byId[fallbackId];
+      if (existing == null) {
+        byId[fallbackId] = SchemeEnrollment.fromRedemption(redemption);
+        continue;
+      }
+      if (redemption.isCompleted && !existing.isPast) {
+        byId[fallbackId] = existing.copyWith(
+          status: 'REDEEMED',
+          uiState: 'PAST',
+          closedAt: redemption.completedAt ?? existing.closedAt,
+          redeemableBalancePaise: redemption.requestedAmountPaise > 0
+              ? redemption.requestedAmountPaise
+              : existing.redeemableBalancePaise,
+        );
+      }
+    }
+    return byId.values.toList();
+  }
+
+  Future<void> _hydrateInstallments(String enrollmentId) async {
+    final current = enrollmentById(enrollmentId);
+    if (current == null || current.installments.isNotEmpty) return;
+    try {
+      final cycles = await _repository.fetchInstallments(enrollmentId);
+      if (cycles.isEmpty) return;
+      final index = enrollments.indexWhere(
+        (item) => item.enrollmentId == enrollmentId,
+      );
+      if (index < 0) return;
+      enrollments[index] = current.copyWith(
+        totalInstallments: current.totalInstallments > 0
+            ? current.totalInstallments
+            : cycles.length,
+        paidInstallments: cycles.where((item) => item.isPaid).length,
+        nextDueDate: cycles
+            .where((item) => !item.isPaid)
+            .map((item) => item.dueDate)
+            .whereType<DateTime>()
+            .cast<DateTime?>()
+            .followedBy([null])
+            .first,
+        installments: cycles,
+      );
+      if (selectedEnrollmentId.value == enrollmentId) {
+        _syncUiFromApi();
+      }
+    } catch (_) {}
   }
 
   Future<RedemptionEligibility?> loadRedemptionEligibility() async {

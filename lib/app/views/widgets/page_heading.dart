@@ -8,6 +8,7 @@ class PageHeading extends StatelessWidget {
     required this.subtitle,
     this.trailing,
     this.horizontalPadding = 16,
+    this.subtitleSize = 10,
     super.key,
   });
 
@@ -15,6 +16,7 @@ class PageHeading extends StatelessWidget {
   final String subtitle;
   final Widget? trailing;
   final double horizontalPadding;
+  final double subtitleSize;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +33,9 @@ class PageHeading extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.muted,
-                    fontSize: 10,
+                    fontSize: subtitleSize,
                   ),
                 ),
               ],

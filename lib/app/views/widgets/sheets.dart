@@ -1247,13 +1247,33 @@ abstract final class AppSheets {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Obx(
-              () => PrimaryButton(
-                label: 'PLACE ORDER',
-                loading: shop.placingOrder.value,
-                onPressed: shop.placeOrder,
-              ),
-            ),
+            child: Obx(() {
+              final status = shop.paymentStatus.value;
+              return Column(
+                children: [
+                  if (status != null && status.isNotEmpty) ...[
+                    Text(
+                      status,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.sans(
+                        size: 11,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  PrimaryButton(
+                    label: shop.placingOrder.value
+                        ? 'PROCESSING…'
+                        : 'PLACE ORDER',
+                    loading: shop.placingOrder.value,
+                    onPressed: shop.placingOrder.value
+                        ? null
+                        : () => unawaited(shop.placeOrder()),
+                  ),
+                ],
+              );
+            }),
           ),
         ],
       ),
@@ -1323,7 +1343,10 @@ abstract final class AppSheets {
             _header('Saved Addresses'),
             Expanded(
               child: shop.addressesLoading.value && shop.addresses.isEmpty
-                  ? const OrdersListShimmer()
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: AddressListShimmer(),
+                    )
                   : shop.addresses.isEmpty
                       ? Center(
                           child: Text(
@@ -1725,23 +1748,23 @@ abstract final class AppSheets {
             _header('Wavoo Gold Scheme'),
             Expanded(
               child: items.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          scheme.isLoading.value
-                              ? 'Loading schemes…'
-                              : scheme.loadError.value ??
+                  ? scheme.isLoading.value
+                      ? const SheetListShimmer(count: 3, height: 92)
+                      : Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              scheme.loadError.value ??
                                   'No published schemes are available right now.',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.sans(
-                            size: 12,
-                            color: AppColors.muted,
-                            height: 1.45,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.sans(
+                                size: 12,
+                                color: AppColors.muted,
+                                height: 1.45,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    )
+                        )
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(17, 16, 17, 30),
                       children: [
@@ -1863,52 +1886,84 @@ abstract final class AppSheets {
   static void showSchemePayment() {
     final scheme = Get.find<SchemeController>();
     _open(
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _header('Pay Monthly Instalment'),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.verified_user_outlined,
-                  size: 44,
-                  color: AppColors.gold,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '₹${scheme.monthlyAmount.value}',
-                  style: AppTypography.serif(size: 32),
-                ),
-                Text(
-                  'Secure payment for your Wavoo Gold Scheme',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-                const SizedBox(height: 20),
-                Obx(
-                  () => PrimaryButton(
-                    label: 'PAY SECURELY',
-                    loading: scheme.paymentBusy.value,
-                    onPressed: () {
-                      final reachesMaturity = scheme.paidInstallments.value ==
-                          scheme.totalInstallments - 1;
-                      scheme.payInstallment();
-                      if (reachesMaturity) {
-                        Future<void>.delayed(
-                          const Duration(milliseconds: 350),
-                          AppSheets.showRedemption,
-                        );
-                      }
-                    },
+      Obx(() {
+        final busy = scheme.paymentBusy.value;
+        final status = scheme.paymentStatus.value;
+        final intent = scheme.lastIntent.value;
+        final succeeded = intent?.isSuccess == true;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _header('Pay Monthly Instalment'),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.verified_user_outlined,
+                    size: 44,
+                    color: AppColors.gold,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    '₹${scheme.monthlyAmount.value}',
+                    style: AppTypography.serif(size: 32),
+                  ),
+                  Text(
+                    succeeded
+                        ? 'Payment confirmed by Wavoo'
+                        : 'Secure payment for your Wavoo Gold Scheme',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.muted),
+                  ),
+                  if (status != null && status.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      status,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.sans(
+                        size: 12,
+                        color: succeeded
+                            ? AppColors.successDark
+                            : AppColors.muted,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  PrimaryButton(
+                    label: busy
+                        ? 'PROCESSING…'
+                        : succeeded
+                            ? 'DONE'
+                            : 'PAY SECURELY',
+                    loading: busy,
+                    onPressed: busy
+                        ? null
+                        : () {
+                            if (succeeded) {
+                              Get.back<void>();
+                              return;
+                            }
+                            unawaited(_completeSchemePayment());
+                          },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
+  }
+
+  static Future<void> _completeSchemePayment() async {
+    final scheme = Get.find<SchemeController>();
+    final result = await scheme.payInstallment();
+    if (result?.isSuccess != true) return;
+    final enrollment = scheme.activeEnrollment;
+    if (enrollment == null || !enrollment.isRedeemable) return;
+    if (Get.isBottomSheetOpen == true) Get.back<void>();
+    showRedemption();
   }
 
   static void showRedemption() {
@@ -2253,9 +2308,12 @@ abstract final class AppSheets {
           'CONFIRM REDEMPTION',
           loading: scheme.redemptionBusy.value,
           onTap: () {
-            scheme.redeem(completionMethod);
-            justConfirmed.value = true;
-            step.value = 4;
+            unawaited(() async {
+              final created = await scheme.redeem(completionMethod);
+              if (created == null) return;
+              justConfirmed.value = true;
+              step.value = 4;
+            }());
           },
         ),
         SizedBox(
@@ -2560,12 +2618,13 @@ class _AddressFormSheetState extends State<_AddressFormSheet> {
       return;
     }
     setState(() => _saving = true);
-    await shop.saveAddress(
+    final ok = await shop.saveAddress(
       draft,
       existingId: _asNew ? null : widget.prefilling?.id,
     );
     if (!mounted) return;
-    Navigator.of(context).pop();
+    setState(() => _saving = false);
+    if (ok) Navigator.of(context).pop();
   }
 
   @override

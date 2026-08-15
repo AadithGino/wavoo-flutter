@@ -472,9 +472,7 @@ class ShopController extends GetxController {
     _notify('Address removed');
   }
 
-  void placeOrder() {
-    unawaited(_placeOrder());
-  }
+  Future<bool> placeOrder() => _placeOrder();
 
   Future<bool> _placeOrder() async {
     if (cart.isEmpty) return false;
@@ -499,7 +497,7 @@ class ShopController extends GetxController {
       );
       _upsertOrder(created.order);
 
-      if (created.order.isConfirmed || paymentMethod.value == 'COD') {
+      if (created.order.isConfirmed) {
         await clearBag();
         paymentStatus.value = 'Order confirmed';
         Get.back<void>();
@@ -534,7 +532,6 @@ class ShopController extends GetxController {
         return false;
       }
 
-      await clearBag();
       paymentStatus.value = 'Payment still pending';
       _notify('Payment is still pending. We will update once confirmed.');
       return false;

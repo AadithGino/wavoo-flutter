@@ -8,7 +8,6 @@ import '../core/constants/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import 'screens/catalog_view.dart';
 import 'screens/home_view.dart';
-import 'screens/offers_view.dart';
 import 'screens/profile_view.dart';
 import 'screens/schemes_view.dart';
 import 'widgets/sheets.dart';
@@ -20,7 +19,6 @@ class AppShellView extends GetView<NavigationController> {
     HomeView(),
     CatalogView(),
     SchemesView(),
-    OffersView(),
     ProfileView(),
   ];
 
@@ -139,14 +137,6 @@ class AppShellView extends GetView<NavigationController> {
               label: 'Schemes',
             ),
             NavigationDestination(
-              icon: SvgPicture.asset("assets/svg/offer.svg"),
-              selectedIcon: SvgPicture.asset(
-                "assets/svg/offer.svg",
-                color: AppColors.gold,
-              ),
-              label: 'Offers',
-            ),
-            NavigationDestination(
               icon: SvgPicture.asset("assets/svg/profile.svg"),
               selectedIcon: SvgPicture.asset(
                 "assets/svg/profile.svg",
@@ -219,11 +209,6 @@ class _AppDrawer extends StatelessWidget {
                       svgAsset: 'assets/svg/scheme.svg',
                       label: 'Gold Savings Scheme',
                       onTap: () => onNavigate(2),
-                    ),
-                    _DrawerLink(
-                      svgAsset: 'assets/svg/offer.svg',
-                      label: 'Offers & Privileges',
-                      onTap: () => onNavigate(3),
                     ),
                     Obx(
                       () => _DrawerLink(

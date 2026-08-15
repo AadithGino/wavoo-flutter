@@ -241,9 +241,11 @@ class SchemePageShimmer extends StatelessWidget {
     return const WavooShimmer(
       child: Column(
         children: [
-          ShimmerBox(width: double.infinity, height: 210, radius: 14),
+          ShimmerBox(width: double.infinity, height: 46, radius: 11),
+          SizedBox(height: 16),
+          ShimmerBox(width: double.infinity, height: 220, radius: 14),
           SizedBox(height: 18),
-          ShimmerBox(width: double.infinity, height: 260, radius: 14),
+          ShimmerBox(width: double.infinity, height: 140, radius: 12),
         ],
       ),
     );
@@ -294,6 +296,89 @@ class AddressCardShimmer extends StatelessWidget {
             ShimmerBox(width: 180, height: 10, radius: 4),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class AddressListShimmer extends StatelessWidget {
+  const AddressListShimmer({this.count = 2, super.key});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          const AddressCardShimmer(),
+        ],
+      ],
+    );
+  }
+}
+
+class SheetListShimmer extends StatelessWidget {
+  const SheetListShimmer({this.count = 5, this.height = 78, super.key});
+
+  final int count;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return WavooShimmer(
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: count,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, __) => ShimmerBox(
+          width: double.infinity,
+          height: height,
+          radius: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class ProfilePageShimmer extends StatelessWidget {
+  const ProfilePageShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const WavooShimmer(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+        child: Column(
+          children: [
+            ShimmerBox(width: double.infinity, height: 118, radius: 14),
+            SizedBox(height: 14),
+            ShimmerBox(width: double.infinity, height: 268, radius: 13),
+            SizedBox(height: 14),
+            ShimmerBox(width: 140, height: 18, radius: 6),
+            SizedBox(height: 10),
+            ShimmerBox(width: double.infinity, height: 86, radius: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HomeSectionsShimmer extends StatelessWidget {
+  const HomeSectionsShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const WavooShimmer(
+      child: Column(
+        children: [
+          SizedBox(height: 8),
+          ShimmerBox(width: double.infinity, height: 88, radius: 13),
+          SizedBox(height: 8),
+          ShimmerBox(width: double.infinity, height: 88, radius: 13),
+        ],
       ),
     );
   }

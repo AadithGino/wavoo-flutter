@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../controllers/navigation_controller.dart';
 import '../../controllers/scheme_controller.dart';
 import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/money.dart';
+import '../../data/models/scheme.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_image.dart';
 import '../widgets/scheme_progress_card.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/sheets.dart';
 import '../widgets/shimmers.dart';
 
 class HomeView extends StatefulWidget {
@@ -180,6 +184,37 @@ class _HomeViewState extends State<HomeView> {
           if (scheme.isLoading.value) return const SchemeCardShimmer();
           if (!scheme.hasJoined.value) return const SizedBox.shrink();
           return SchemeProgressCard(onOpenPlan: () => nav.changePage(2));
+        }),
+        Obx(() {
+          final home = Get.find<HomeController>();
+          final scheme = Get.find<SchemeController>();
+          final shownId = scheme.hasJoined.value
+              ? scheme.activeEnrollment?.enrollmentId
+              : null;
+          final fromHome = home.schemesRedeemable.toList();
+          final fromScheme = scheme.enrollments
+              .where((item) => item.isRedeemable && !item.isPast)
+              .toList();
+          if (home.isLoading.value &&
+              fromHome.isEmpty &&
+              fromScheme.isEmpty) {
+            return const HomeSectionsShimmer();
+          }
+          final redeemable = (fromHome.isNotEmpty ? fromHome : fromScheme)
+              .where((item) => item.enrollmentId != shownId)
+              .toList();
+          if (redeemable.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              children: [
+                for (var i = 0; i < redeemable.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _RedeemableHomeCard(enrollment: redeemable[i]),
+                ],
+              ],
+            ),
+          );
         }),
         const SizedBox(height: 12),
         InkWell(
@@ -365,51 +400,6 @@ class _HomeViewState extends State<HomeView> {
             ),
           );
         }),
-        const SizedBox(height: 17),
-        InkWell(
-          onTap: () => nav.changePage(3),
-          child: Container(
-            height: 118,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/design_08.webp'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
-                  colors: [Color(0xD50E0904), Color(0x220E0904)],
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'EXCLUSIVE FOR YOU',
-                    style: TextStyle(
-                      color: AppColors.goldSoft,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    'Special Offers',
-                    style: AppTypography.serif(size: 20, color: Colors.white),
-                  ),
-                  Text(
-                    'Up to 20% off on selected making charges',
-                    style: TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -439,4 +429,125 @@ class _HomeViewState extends State<HomeView> {
   //   'Bangles' => Icons.blur_circular,
   //   _ => Icons.auto_awesome,
   // };
+}
+
+class _RedeemableHomeCard extends StatelessWidget {
+  const _RedeemableHomeCard({required this.enrollment});
+
+  final SchemeEnrollment enrollment;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Get.find<SchemeController>().selectEnrollment(enrollment);
+        AppSheets.showRedemption();
+      },
+      borderRadius: BorderRadius.circular(13),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 88),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFF9ED), Color(0xFFF3DFB8)],
+          ),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xFFD6AF69)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F8B5A14),
+              blurRadius: 16,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFD39B3C), Color(0xFF8D5908)],
+                ),
+              ),
+              child: const Text(
+                '✓',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'READY TO REDEEM',
+                    style: AppTypography.sans(
+                      size: 6,
+                      weight: FontWeight.w800,
+                      color: AppColors.goldDark,
+                      letterSpacing: .48,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    enrollment.planName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.sans(
+                      size: 11,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    enrollment.enrollmentNumber.isEmpty
+                        ? 'Fully paid'
+                        : '${enrollment.enrollmentNumber} · fully paid',
+                    style: AppTypography.sans(
+                      size: 7,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Money.fromPaise(
+                    enrollment.redeemableBalancePaise > 0
+                        ? enrollment.redeemableBalancePaise
+                        : enrollment.savedPaise,
+                  ),
+                  style: AppTypography.sans(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: AppColors.goldDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Redeem now →',
+                  style: AppTypography.sans(
+                    size: 7,
+                    weight: FontWeight.w700,
+                    color: AppColors.goldDark,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -30,6 +30,7 @@ class AuthController extends GetxController {
   final isAuthenticated = false.obs;
   final user = Rxn<AppUser>();
   final profile = Rxn<CustomerProfile>();
+  final profileLoading = false.obs;
   final errorMessage = RxnString();
 
   final mobile = ''.obs;
@@ -69,6 +70,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> refreshProfile() async {
+    profileLoading.value = true;
     try {
       profile.value = await _profile.fetchProfile();
       final p = profile.value;
@@ -86,6 +88,8 @@ class AuthController extends GetxController {
       }
     } catch (_) {
       // Profile may fail if customer record missing; keep session.
+    } finally {
+      profileLoading.value = false;
     }
   }
 
@@ -264,6 +268,7 @@ class AuthController extends GetxController {
   Future<void> _wipeLocalState() async {
     user.value = null;
     profile.value = null;
+    profileLoading.value = false;
     isAuthenticated.value = false;
     otpStep.value = 0;
     mobile.value = '';
@@ -282,10 +287,7 @@ class AuthController extends GetxController {
       Get.find<NavigationController>().changePage(0);
     }
     if (Get.isRegistered<HomeController>()) {
-      final home = Get.find<HomeController>();
-      home.goldRatePaisePerGram.value = null;
-      home.goldRateLabel.value = null;
-      home.loadError.value = null;
+      Get.find<HomeController>().reset();
     }
   }
 

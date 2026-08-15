@@ -1,3 +1,4 @@
+import 'activity.dart';
 import 'address.dart';
 
 class AppUser {
@@ -89,6 +90,7 @@ class CustomerProfile {
     this.address,
     this.defaultAddress,
     this.addresses = const [],
+    this.historySummary,
   });
 
   final String id;
@@ -101,6 +103,7 @@ class CustomerProfile {
   final Map<String, dynamic>? address;
   final Address? defaultAddress;
   final List<Address> addresses;
+  final HistorySummary? historySummary;
 
   factory CustomerProfile.fromJson(Map<String, dynamic> json) {
     Address? parseAddress(dynamic raw) {
@@ -133,6 +136,11 @@ class CustomerProfile {
           : null,
       defaultAddress: parseAddress(json['defaultAddress']),
       addresses: list,
+      historySummary: json['historySummary'] is Map
+          ? HistorySummary.fromJson(
+              Map<String, dynamic>.from(json['historySummary'] as Map),
+            )
+          : null,
     );
   }
 

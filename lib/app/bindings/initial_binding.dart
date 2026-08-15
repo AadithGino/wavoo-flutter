@@ -7,6 +7,7 @@ import '../controllers/scheme_controller.dart';
 import '../controllers/shop_controller.dart';
 import '../core/network/api_client.dart';
 import '../data/local/local_shop_store.dart';
+import '../data/repositories/activity_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/catalog_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -33,6 +34,7 @@ class InitialBinding extends Bindings {
     Get.put(profileRepo, permanent: true);
     Get.put(catalogRepo, permanent: true);
     Get.put(schemeRepo, permanent: true);
+    Get.put(ActivityRepository(apiClient), permanent: true);
     Get.put(LocalShopStore(), permanent: true);
 
     Get.put(
