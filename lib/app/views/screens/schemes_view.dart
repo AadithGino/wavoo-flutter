@@ -41,14 +41,13 @@ class _SchemesViewState extends State<SchemesView> {
               ? Get.find<HomeController>()
               : null;
           home?.schemesPastPreview.length;
-          final current = scheme.enrollments
-              .where((item) => !item.isPast)
-              .toList()
-            ..sort((a, b) {
-              final aReady = a.isRedeemable ? 1 : 0;
-              final bReady = b.isRedeemable ? 1 : 0;
-              return bReady.compareTo(aReady);
-            });
+          final current =
+              scheme.enrollments.where((item) => !item.isPast).toList()
+                ..sort((a, b) {
+                  final aReady = a.isRedeemable ? 1 : 0;
+                  final bReady = b.isRedeemable ? 1 : 0;
+                  return bReady.compareTo(aReady);
+                });
           final past = _uniqueEnrollments([
             ...scheme.enrollments.where((item) => item.isPast),
             ...?home?.schemesPastPreview,
@@ -350,7 +349,7 @@ class _CurrentSchemeCard extends StatelessWidget {
                     Text(
                       redeemable ? 'REDEMPTION AVAILABLE' : 'MONTHLY PLAN',
                       style: AppTypography.sans(
-                        size: 7,
+                        size: 8,
                         weight: FontWeight.w800,
                         color: AppColors.goldDark,
                         letterSpacing: .84,
@@ -366,7 +365,7 @@ class _CurrentSchemeCard extends StatelessWidget {
                       Text(
                         enrollment.enrollmentNumber,
                         style: AppTypography.sans(
-                          size: 7,
+                          size: 8,
                           color: AppColors.muted,
                         ),
                       ),
@@ -416,12 +415,12 @@ class _CurrentSchemeCard extends StatelessWidget {
             children: [
               Text(
                 redeemable ? 'Plan completed' : 'Plan progress',
-                style: AppTypography.sans(size: 8, color: AppColors.muted),
+                style: AppTypography.sans(size: 9, color: AppColors.muted),
               ),
               Text(
                 '$progress%',
                 style: AppTypography.sans(
-                  size: 8,
+                  size: 9,
                   weight: FontWeight.w800,
                   color: AppColors.goldDark,
                 ),
@@ -599,7 +598,7 @@ class _StartAnotherPrompt extends StatelessWidget {
                 Text(
                   'Create another scheme without affecting your current plans.',
                   style: AppTypography.sans(
-                    size: 7,
+                    size: 8,
                     color: AppColors.muted,
                     height: 1.35,
                   ),
@@ -715,7 +714,8 @@ class _EnrollHero extends StatelessWidget {
                       ),
                       SizedBox(width: 6),
                       Expanded(
-                        child: _Benefit(value: 'Multi', label: 'Plans supported'),
+                        child:
+                            _Benefit(value: 'Multi', label: 'Plans supported'),
                       ),
                     ],
                   ),
@@ -773,7 +773,7 @@ class _PrimaryButton extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTypography.sans(
-                  size: 8,
+                  size: 9,
                   weight: FontWeight.w700,
                   color: Colors.white,
                   letterSpacing: .24,
@@ -810,7 +810,7 @@ class _SecondaryButton extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.sans(
-            size: 8,
+            size: 9,
             weight: FontWeight.w700,
             color: AppColors.goldDark,
             letterSpacing: .24,
@@ -947,7 +947,7 @@ class _EmptyNote extends StatelessWidget {
       child: Text(
         text,
         style: AppTypography.sans(
-          size: 9,
+          size: 10,
           color: AppColors.muted,
           height: 1.45,
         ),
@@ -988,7 +988,7 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: AppTypography.sans(
-          size: 6,
+          size: 7,
           weight: FontWeight.w900,
           color: color,
           letterSpacing: .48,

@@ -1,4 +1,4 @@
-package com.example.wavoo_app
+package app.wavoo.jewellers
 
 import io.flutter.embedding.android.FlutterActivity
 

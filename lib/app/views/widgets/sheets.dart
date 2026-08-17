@@ -208,7 +208,7 @@ abstract final class AppSheets {
                   Text(
                     product.description,
                     style: AppTypography.sans(
-                      size: 10,
+                      size: 11,
                       color: AppColors.muted,
                       height: 1.6,
                     ),
@@ -387,7 +387,7 @@ abstract final class AppSheets {
                         Text(
                           'Stone type, count and weight',
                           style: AppTypography.sans(
-                            size: 9,
+                            size: 10,
                             color: AppColors.muted,
                           ),
                         ),
@@ -395,7 +395,7 @@ abstract final class AppSheets {
                         Text(
                           specs.stoneDetails,
                           style: AppTypography.sans(
-                            size: 10,
+                            size: 11,
                             weight: FontWeight.w700,
                           ),
                         ),
@@ -466,7 +466,7 @@ abstract final class AppSheets {
         children: [
           Text(
             label,
-            style: AppTypography.sans(size: 9, color: AppColors.muted),
+            style: AppTypography.sans(size: 10, color: AppColors.muted),
           ),
           const SizedBox(height: 5),
           Text(
@@ -474,7 +474,7 @@ abstract final class AppSheets {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.sans(
-              size: 10,
+              size: 11,
               weight: FontWeight.w700,
               height: 1.35,
             ),
@@ -505,7 +505,7 @@ abstract final class AppSheets {
             child: Text(
               label,
               style: AppTypography.sans(
-                size: total ? 9 : 9,
+                size: total ? 10 : 10,
                 weight: total ? FontWeight.w800 : FontWeight.w400,
                 color: total ? AppColors.ink : const Color(0xFF5E574E),
               ),
@@ -580,7 +580,7 @@ abstract final class AppSheets {
         child: Text(
           label.toUpperCase(),
           style: AppTypography.sans(
-            size: 7,
+            size: 8,
             weight: FontWeight.w800,
             color: AppColors.goldDark,
             letterSpacing: .42,
@@ -621,7 +621,7 @@ abstract final class AppSheets {
                 child: ProductImage(
                   url: thumb,
                   width: 56,
-                  height: 56,
+                  height: 66,
                 ),
               ),
               const SizedBox(width: 12),
@@ -649,7 +649,7 @@ abstract final class AppSheets {
                     Text(
                       meta,
                       style: AppTypography.sans(
-                        size: 8,
+                        size: 10,
                         color: AppColors.muted,
                         height: 1.45,
                       ),
@@ -661,7 +661,7 @@ abstract final class AppSheets {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.sans(
-                          size: 8,
+                          size: 10,
                           color: AppColors.muted,
                           height: 1.45,
                         ),
@@ -697,7 +697,7 @@ abstract final class AppSheets {
                 Text(
                   'View order details',
                   style: AppTypography.sans(
-                    size: 8,
+                    size: 9,
                     weight: FontWeight.w700,
                     color: AppColors.goldDark,
                   ),
@@ -1263,9 +1263,8 @@ abstract final class AppSheets {
                     const SizedBox(height: 10),
                   ],
                   PrimaryButton(
-                    label: shop.placingOrder.value
-                        ? 'PROCESSING…'
-                        : 'PLACE ORDER',
+                    label:
+                        shop.placingOrder.value ? 'PROCESSING…' : 'PLACE ORDER',
                     loading: shop.placingOrder.value,
                     onPressed: shop.placingOrder.value
                         ? null
@@ -1703,7 +1702,7 @@ abstract final class AppSheets {
                 Text(
                   'Instalment ${payment.installment}${payment.isNext ? ' · Due next' : ''}',
                   style: AppTypography.sans(
-                    size: 9,
+                    size: 10,
                     weight: FontWeight.w700,
                   ),
                 ),
@@ -1713,7 +1712,7 @@ abstract final class AppSheets {
                       ? '${scheme.dateLabel(payment.date)} · ${payment.receipt}'
                       : '${scheme.dateLabel(payment.date)} · ${scheme.money(payment.amount)}',
                   style: AppTypography.sans(
-                    size: 9,
+                    size: 10,
                     color: AppColors.muted,
                   ),
                 ),
@@ -1723,7 +1722,7 @@ abstract final class AppSheets {
           Text(
             scheme.money(payment.amount),
             style: AppTypography.sans(
-              size: 10,
+              size: 11,
               weight: FontWeight.w700,
               color: AppColors.goldDark,
             ),
@@ -1923,9 +1922,8 @@ abstract final class AppSheets {
                       textAlign: TextAlign.center,
                       style: AppTypography.sans(
                         size: 12,
-                        color: succeeded
-                            ? AppColors.successDark
-                            : AppColors.muted,
+                        color:
+                            succeeded ? AppColors.successDark : AppColors.muted,
                       ),
                     ),
                   ],
@@ -2132,7 +2130,7 @@ abstract final class AppSheets {
         Text(
           'Select how you would like to redeem your matured gold savings.',
           style: AppTypography.sans(
-            size: 10,
+            size: 11,
             color: AppColors.muted,
             height: 1.6,
           ),
@@ -2232,7 +2230,7 @@ abstract final class AppSheets {
                     Text(
                       title,
                       style: AppTypography.sans(
-                        size: 10,
+                        size: 11,
                         weight: FontWeight.w700,
                       ),
                     ),
@@ -2240,7 +2238,7 @@ abstract final class AppSheets {
                     Text(
                       description,
                       style: AppTypography.sans(
-                        size: 8,
+                        size: 10,
                         color: AppColors.muted,
                         height: 1.4,
                       ),
@@ -2297,7 +2295,7 @@ abstract final class AppSheets {
           child: Text(
             note,
             style: AppTypography.sans(
-              size: 9,
+              size: 10,
               color: AppColors.muted,
               height: 1.45,
             ),
@@ -2362,7 +2360,7 @@ abstract final class AppSheets {
                     child: Text(
                       rows[index].$1,
                       style: AppTypography.sans(
-                        size: 9,
+                        size: 10,
                         color: const Color(0xFF5E574E),
                       ),
                     ),
@@ -2370,7 +2368,7 @@ abstract final class AppSheets {
                   Text(
                     rows[index].$2,
                     style: AppTypography.sans(
-                      size: 10,
+                      size: 11,
                       weight: FontWeight.w700,
                     ),
                   ),
@@ -2772,13 +2770,13 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
             Expanded(
               child: Text(
                 label,
-                style: AppTypography.sans(size: 9, color: AppColors.muted),
+                style: AppTypography.sans(size: 10, color: AppColors.muted),
               ),
             ),
             Text(
               value,
               style: AppTypography.sans(
-                size: emphasis ? 12 : 9,
+                size: emphasis ? 12 : 10,
                 weight: FontWeight.w700,
                 color: emphasis ? AppColors.goldDark : AppColors.ink,
               ),
@@ -2939,7 +2937,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                                     address.localityLine,
                                 ].join('\n'),
                                 style: AppTypography.sans(
-                                  size: 8,
+                                  size: 10,
                                   color: AppColors.muted,
                                   height: 1.45,
                                 ),
@@ -3070,7 +3068,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                   Text(
                     line.name,
                     style: AppTypography.sans(
-                      size: 10,
+                      size: 12,
                       weight: FontWeight.w700,
                     ),
                   ),
@@ -3086,7 +3084,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                         line.lineStatus!.trim(),
                     ].join(' · '),
                     style: AppTypography.sans(
-                      size: 8,
+                      size: 10,
                       color: AppColors.muted,
                       height: 1.45,
                     ),
@@ -3097,7 +3095,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
             Text(
               AppSheets._money(line.lineTotalPaise ~/ 100),
               style: AppTypography.sans(
-                size: 10,
+                size: 11,
                 weight: FontWeight.w800,
                 color: AppColors.goldDark,
               ),

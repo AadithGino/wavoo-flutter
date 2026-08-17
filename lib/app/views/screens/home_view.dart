@@ -9,10 +9,10 @@ import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/money.dart';
 import '../../data/models/scheme.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_image.dart';
 import '../widgets/scheme_progress_card.dart';
-import '../widgets/empty_state.dart';
 import '../widgets/sheets.dart';
 import '../widgets/shimmers.dart';
 
@@ -195,9 +195,7 @@ class _HomeViewState extends State<HomeView> {
           final fromScheme = scheme.enrollments
               .where((item) => item.isRedeemable && !item.isPast)
               .toList();
-          if (home.isLoading.value &&
-              fromHome.isEmpty &&
-              fromScheme.isEmpty) {
+          if (home.isLoading.value && fromHome.isEmpty && fromScheme.isEmpty) {
             return const HomeSectionsShimmer();
           }
           final redeemable = (fromHome.isNotEmpty ? fromHome : fromScheme)
@@ -490,7 +488,7 @@ class _RedeemableHomeCard extends StatelessWidget {
                   Text(
                     'READY TO REDEEM',
                     style: AppTypography.sans(
-                      size: 6,
+                      size: 8,
                       weight: FontWeight.w800,
                       color: AppColors.goldDark,
                       letterSpacing: .48,
@@ -512,7 +510,7 @@ class _RedeemableHomeCard extends StatelessWidget {
                         ? 'Fully paid'
                         : '${enrollment.enrollmentNumber} · fully paid',
                     style: AppTypography.sans(
-                      size: 7,
+                      size: 9,
                       color: AppColors.muted,
                     ),
                   ),

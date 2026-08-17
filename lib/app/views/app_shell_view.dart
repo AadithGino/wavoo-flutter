@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
@@ -15,6 +16,8 @@ import 'widgets/sheets.dart';
 class AppShellView extends GetView<NavigationController> {
   const AppShellView({super.key});
 
+  static final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   static const _pages = [
     HomeView(),
     CatalogView(),
@@ -25,7 +28,23 @@ class AppShellView extends GetView<NavigationController> {
   @override
   Widget build(BuildContext context) {
     final shop = Get.find<ShopController>();
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        final scaffold = _scaffoldKey.currentState;
+        if (scaffold?.isDrawerOpen ?? false) {
+          scaffold!.closeDrawer();
+          return;
+        }
+        if (controller.currentIndex.value != 0) {
+          controller.changePage(0);
+          return;
+        }
+        SystemNavigator.pop();
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
       drawer: _AppDrawer(
         onNavigate: (index) {
           Navigator.of(context).pop();
@@ -146,6 +165,7 @@ class AppShellView extends GetView<NavigationController> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

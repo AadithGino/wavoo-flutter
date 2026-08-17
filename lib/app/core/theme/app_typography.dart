@@ -32,12 +32,12 @@ abstract final class AppTypography {
     double? letterSpacing,
   }) {
     final loraFallback = GoogleFonts.lora(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-        letterSpacing: letterSpacing,
-      );
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
     return loraFallback.copyWith(
       fontFamily: 'Georgia',
       fontFamilyFallback: [loraFallback.fontFamily!],
@@ -56,9 +56,9 @@ abstract final class AppTypography {
         titleSmall: sans(size: 11, weight: FontWeight.w600),
         bodyLarge: sans(size: 12, height: 1.45),
         bodyMedium: sans(size: 10, height: 1.45),
-        bodySmall: sans(size: 8, color: AppColors.muted, height: 1.4),
-        labelLarge: sans(size: 10, weight: FontWeight.w700),
-        labelMedium: sans(size: 8, weight: FontWeight.w700),
-        labelSmall: sans(size: 7, weight: FontWeight.w700),
+        bodySmall: sans(size: 10, color: AppColors.muted, height: 1.4),
+        labelLarge: sans(size: 12, weight: FontWeight.w700),
+        labelMedium: sans(size: 10, weight: FontWeight.w700),
+        labelSmall: sans(size: 9, weight: FontWeight.w700),
       );
 }

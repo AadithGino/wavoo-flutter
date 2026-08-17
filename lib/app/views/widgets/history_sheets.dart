@@ -3,10 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/scheme_controller.dart';
-import '../../controllers/shop_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/money.dart';
+import '../../core/utils/transaction_invoice.dart';
 import '../../data/models/activity.dart';
 import '../../data/models/scheme.dart';
 import '../../data/repositories/activity_repository.dart';
@@ -69,16 +69,36 @@ Widget _historyHeader(String title) => Column(
 String _dateLabel(DateTime? date) {
   if (date == null) return '—';
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
 String _monthLabel(DateTime date) {
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return '${months[date.month - 1]} ${date.year}';
 }
@@ -193,7 +213,7 @@ class _TransactionsSheetState extends State<_TransactionsSheet> {
                                 child: Text(
                                   group.key,
                                   style: AppTypography.sans(
-                                    size: 7,
+                                    size: 9,
                                     weight: FontWeight.w800,
                                     color: AppColors.muted,
                                     letterSpacing: .11,
@@ -202,7 +222,7 @@ class _TransactionsSheetState extends State<_TransactionsSheet> {
                               ),
                               for (final item in group.value) ...[
                                 _TransactionRow(item: item),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                               ],
                             ],
                           ],
@@ -234,7 +254,7 @@ class _TransactionsSheetState extends State<_TransactionsSheet> {
         child: Text(
           label,
           style: AppTypography.sans(
-            size: 7,
+            size: 9,
             weight: FontWeight.w800,
             color: active ? AppColors.goldDark : AppColors.muted,
           ),
@@ -256,116 +276,170 @@ class _TransactionsSheetState extends State<_TransactionsSheet> {
   }
 }
 
-class _TransactionRow extends StatelessWidget {
+class _TransactionRow extends StatefulWidget {
   const _TransactionRow({required this.item});
 
   final CustomerTransaction item;
 
   @override
+  State<_TransactionRow> createState() => _TransactionRowState();
+}
+
+class _TransactionRowState extends State<_TransactionRow> {
+  bool _busy = false;
+
+  Future<void> _downloadInvoice() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await TransactionInvoice.download(widget.item);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final shopping = item.isShopping;
-    return InkWell(
-      onTap: () {
-        if (shopping && item.orderId != null && item.orderId!.isNotEmpty) {
-          Get.back<void>();
-          final shop = Get.find<ShopController>();
-          final order = shop.orderById(item.orderId!);
-          if (order != null) {
-            AppSheets.showOrderDetail(order);
-          } else {
-            AppSheets.showOrders();
-          }
-        } else if (item.enrollmentId != null && item.enrollmentId!.isNotEmpty) {
-          final scheme = Get.find<SchemeController>();
-          final enrollment = scheme.enrollmentById(item.enrollmentId!);
-          if (enrollment != null) scheme.selectEnrollment(enrollment);
-          Get.back<void>();
-          AppSheets.showSchemeDetails();
-        }
-      },
-      borderRadius: BorderRadius.circular(11),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: AppColors.line),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: shopping ? const Color(0xFFEEF3F7) : AppColors.cream,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                shopping ? '◇' : '₹',
-                style: AppTypography.sans(
-                  size: 12,
-                  weight: FontWeight.w800,
-                  color: shopping
-                      ? const Color(0xFF476277)
-                      : AppColors.goldDark,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(13),
+      child: InkWell(
+        onTap: _busy ? null : _downloadInvoice,
+        borderRadius: BorderRadius.circular(13),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 13, 10, 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: shopping ? const Color(0xFFEEF3F7) : AppColors.cream,
+                  shape: BoxShape.circle,
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.sans(
-                      size: 9,
-                      weight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_dateLabel(item.date)} · ${item.detail}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.sans(
-                      size: 7,
-                      color: AppColors.muted,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  Money.fromPaise(item.amountPaise),
+                child: Text(
+                  shopping ? '◇' : '₹',
                   style: AppTypography.sans(
-                    size: 10,
-                    weight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  item.status.toUpperCase(),
-                  style: AppTypography.sans(
-                    size: 6,
+                    size: 13,
                     weight: FontWeight.w800,
-                    color: AppColors.successDark,
+                    color: shopping
+                        ? const Color(0xFF476277)
+                        : AppColors.goldDark,
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.sans(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        _dateLabel(item.date),
+                        if (item.detail.trim().isNotEmpty) item.detail.trim(),
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.sans(
+                        size: 10,
+                        color: AppColors.muted,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Text(
+                          Money.fromPaise(item.amountPaise),
+                          style: AppTypography.sans(
+                            size: 13,
+                            weight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.successSoft,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item.status.toUpperCase(),
+                            style: AppTypography.sans(
+                              size: 8,
+                              weight: FontWeight.w800,
+                              color: AppColors.successDark,
+                              letterSpacing: .3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              _DownloadAffordance(busy: _busy),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _DownloadAffordance extends StatelessWidget {
+  const _DownloadAffordance({required this.busy});
+
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.goldBorder),
+      ),
+      alignment: Alignment.center,
+      child: busy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.8,
+                color: AppColors.goldDark,
+              ),
+            )
+          : const Icon(
+              Icons.download_outlined,
+              size: 18,
+              color: AppColors.goldDark,
+            ),
     );
   }
 }
@@ -407,7 +481,8 @@ class _PastSchemesSheetState extends State<_PastSchemesSheet> {
         if (id.isEmpty) {
           final key = redemption.redemptionId;
           if (key.isNotEmpty) {
-            byId.putIfAbsent(key, () => SchemeEnrollment.fromRedemption(redemption));
+            byId.putIfAbsent(
+                key, () => SchemeEnrollment.fromRedemption(redemption));
           }
           continue;
         }
@@ -638,7 +713,10 @@ class _RedemptionHistorySheetState extends State<_RedemptionHistorySheet> {
                                 gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [Color(0xFFFFFDF9), Color(0xFFF8EDDD)],
+                                  colors: [
+                                    Color(0xFFFFFDF9),
+                                    Color(0xFFF8EDDD)
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(13),
                                 border: Border.all(color: AppColors.goldBorder),
