@@ -31,6 +31,11 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.4
 
+# path_provider_foundation 2.6+ builds an objective_c FFI framework that
+# Xcode fails to embed (missing build/native_assets/ios/objective_c.framework).
+dependency_overrides:
+  path_provider_foundation: 2.5.1
+
 flutter_launcher_icons:
   android: true
   ios: true

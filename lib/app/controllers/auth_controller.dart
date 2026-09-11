@@ -31,6 +31,7 @@ class AuthController extends GetxController {
   final user = Rxn<AppUser>();
   final profile = Rxn<CustomerProfile>();
   final profileLoading = false.obs;
+  final isDeletingAccount = false.obs;
   final errorMessage = RxnString();
 
   final mobile = ''.obs;
@@ -218,6 +219,42 @@ class AuthController extends GetxController {
     }
   }
 
+  String? get accountPhone {
+    final fromProfile = profile.value?.phone?.trim() ?? '';
+    if (fromProfile.isNotEmpty) return fromProfile;
+    final fromUser = user.value?.phone.trim() ?? '';
+    if (fromUser.isNotEmpty) return fromUser;
+    return mobile.value.isEmpty ? null : mobile.value;
+  }
+
+  Future<AccountDeletionRequest?> requestAccountDeletion({
+    String? phone,
+    String? reason,
+  }) async {
+    errorMessage.value = null;
+    final raw = (phone ?? accountPhone ?? '').trim();
+    final normalized = PhoneUtils.normalizeIndian(raw);
+    if (normalized == null) {
+      errorMessage.value = 'Enter a valid 10-digit Indian mobile number';
+      return null;
+    }
+    isDeletingAccount.value = true;
+    try {
+      return await _auth.requestAccountDeletion(
+        phoneRaw: normalized,
+        reason: reason,
+      );
+    } on ApiException catch (e) {
+      errorMessage.value = e.message;
+      return null;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return null;
+    } finally {
+      isDeletingAccount.value = false;
+    }
+  }
+
   Future<void> logout() async {
     await _auth.logout();
     await _wipeLocalState();
@@ -269,6 +306,7 @@ class AuthController extends GetxController {
     user.value = null;
     profile.value = null;
     profileLoading.value = false;
+    isDeletingAccount.value = false;
     isAuthenticated.value = false;
     otpStep.value = 0;
     mobile.value = '';

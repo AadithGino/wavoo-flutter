@@ -83,6 +83,45 @@ class AuthRepository {
     }
   }
 
+  Future<AccountDeletionRequest> requestAccountDeletion({
+    required String phoneRaw,
+    String? reason,
+  }) async {
+    final phone = PhoneUtils.normalizeIndian(phoneRaw);
+    if (phone == null) {
+      throw Exception('Enter a valid 10-digit Indian mobile number');
+    }
+    final body = <String, dynamic>{
+      'phone': phone,
+      if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+    };
+    final data = await _client.post<Map<String, dynamic>>(
+      '/customer/account-deletion-requests',
+      body: body,
+      anonymous: true,
+      parser: (raw) {
+        if (raw is Map) {
+          final map = Map<String, dynamic>.from(raw);
+          final nested = map['request'] ?? map['item'];
+          if (nested is Map) {
+            return Map<String, dynamic>.from(nested);
+          }
+          return map;
+        }
+        return <String, dynamic>{};
+      },
+    );
+    if (data.isNotEmpty) {
+      return AccountDeletionRequest.fromJson(data);
+    }
+    return AccountDeletionRequest(
+      id: '',
+      phone: phone,
+      status: 'REQUESTED',
+      reason: reason?.trim(),
+    );
+  }
+
   Future<void> logout() async {
     try {
       await _client.post('/auth/logout', parser: (_) => null);

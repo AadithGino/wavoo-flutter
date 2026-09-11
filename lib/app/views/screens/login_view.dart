@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/phone.dart';
+import '../widgets/delete_account_sheet.dart';
 import '../widgets/primary_button.dart';
 
 class LoginView extends StatefulWidget {
@@ -269,6 +270,20 @@ class _LoginViewState extends State<LoginView> {
                           auth.resetToPhone();
                         },
                   child: const Text('Use a different number'),
+                )
+              else
+                TextButton(
+                  onPressed: () => showDeleteAccountSheet(
+                    phone: _phoneController.text,
+                  ),
+                  child: Text(
+                    'Delete account',
+                    style: AppTypography.sans(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
                 ),
             ],
           );

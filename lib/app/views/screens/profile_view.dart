@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/money.dart';
 import '../../data/models/activity.dart';
 import '../../data/models/address.dart';
+import '../widgets/delete_account_sheet.dart';
 import '../widgets/history_sheets.dart';
 import '../widgets/page_heading.dart';
 import '../widgets/primary_button.dart';
@@ -214,6 +215,23 @@ class ProfileView extends StatelessWidget {
                 weight: FontWeight.w700,
                 color: AppColors.goldDark,
               ),
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            final auth = Get.find<AuthController>();
+            showDeleteAccountSheet(
+              phone: auth.accountPhone,
+              lockPhone: auth.accountPhone != null,
+            );
+          },
+          child: Text(
+            'DELETE ACCOUNT',
+            style: AppTypography.sans(
+              size: 11,
+              weight: FontWeight.w700,
+              color: const Color(0xFF8A3B32),
             ),
           ),
         ),

@@ -43,6 +43,11 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          if (options.extra['anonymous'] == true) {
+            options.headers.remove('Cookie');
+            handler.next(options);
+            return;
+          }
           await _attachSessionCookies(options);
           handler.next(options);
         },
@@ -93,16 +98,25 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? query,
     T Function(dynamic data)? parser,
+    bool anonymous = false,
   }) =>
-      _request('GET', path, query: query, parser: parser);
+      _request('GET', path, query: query, parser: parser, anonymous: anonymous);
 
   Future<T> post<T>(
     String path, {
     Object? body,
     Map<String, dynamic>? query,
     T Function(dynamic data)? parser,
+    bool anonymous = false,
   }) =>
-      _request('POST', path, body: body, query: query, parser: parser);
+      _request(
+        'POST',
+        path,
+        body: body,
+        query: query,
+        parser: parser,
+        anonymous: anonymous,
+      );
 
   Future<T> patch<T>(
     String path, {
@@ -135,6 +149,7 @@ class ApiClient {
     Map<String, dynamic>? query,
     T Function(dynamic data)? parser,
     bool retried = false,
+    bool anonymous = false,
   }) async {
     await init();
     try {
@@ -144,6 +159,7 @@ class ApiClient {
         queryParameters: query,
         options: Options(
           method: method,
+          extra: {if (anonymous) 'anonymous': true},
           validateStatus: (status) => status != null && status < 600,
         ),
       );
@@ -153,11 +169,13 @@ class ApiClient {
       final isAuthFailure = status == 401 ||
           code == 'SESSION_EXPIRED' ||
           code == 'AUTHENTICATION_REQUIRED';
-      final skipRefresh = path.contains('/auth/refresh') ||
+      final skipRefresh = anonymous ||
+          path.contains('/auth/refresh') ||
           path.contains('/auth/customer/otp') ||
           path.contains('/auth/customer/register') ||
           path.contains('/auth/login') ||
-          path.contains('/auth/logout');
+          path.contains('/auth/logout') ||
+          path.contains('/customer/account-deletion-requests');
 
       if (isAuthFailure && !skipRefresh && !retried) {
         final refreshed = await refreshSession();

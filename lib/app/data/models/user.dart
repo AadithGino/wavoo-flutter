@@ -174,3 +174,39 @@ class CustomerProfile {
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 }
+
+class AccountDeletionRequest {
+  const AccountDeletionRequest({
+    required this.id,
+    required this.phone,
+    required this.status,
+    this.reason,
+    this.createdAt,
+  });
+
+  final String id;
+  final String phone;
+  final String status;
+  final String? reason;
+  final DateTime? createdAt;
+
+  bool get isOpen {
+    final value = status.toUpperCase();
+    return value == 'REQUESTED' || value == 'OPEN' || value == 'PENDING';
+  }
+
+  factory AccountDeletionRequest.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic value) {
+      if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+      return null;
+    }
+
+    return AccountDeletionRequest(
+      id: (json['id'] ?? json['requestId'] ?? '').toString(),
+      phone: (json['phone'] ?? json['mobile'] ?? '').toString(),
+      status: (json['status'] ?? 'REQUESTED').toString(),
+      reason: (json['reason'] as String?)?.trim(),
+      createdAt: parseDate(json['createdAt'] ?? json['requestedAt']),
+    );
+  }
+}
